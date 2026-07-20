@@ -5,7 +5,18 @@ INSERT INTO types_operations (code, libelle) VALUES
 ('RETRAIT', 'Retrait'),
 ('TRANSFERT', 'Transfert');
 
--- Exemple de barème par tranche pour le retrait (id type_operation = 2)
+INSERT INTO statut (libelle) VALUES
+('REUSSI'),
+('ECHEC');
+
+-- Barèmes de frais pour le dépôt (id type_operation = 1)
+INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage) VALUES
+(1, 0,      5000,     100,  0),
+(1, 5001,   20000,    200,  0),
+(1, 20001,  100000,   0,    1.0),
+(1, 100001, 999999999, 0,   0.75);
+
+-- Exemple de barème par tranche pour le transfert (id type_operation = 3)
 INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage) VALUES
 (3, 0,      5000,    200,  0),
 (3, 5001,   20000,   500,  0),

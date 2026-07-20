@@ -157,6 +157,7 @@
                 <nav class="client-nav" aria-label="Navigation client">
                     <a href="<?= site_url('dashboard') ?>">Dashboard</a>
                     <a href="<?= site_url('transfert') ?>">Transfert</a>
+                    <a href="<?= site_url('depot') ?>">Depot</a>
                     <a href="<?= site_url('transfert/historique') ?>">Historique</a>
                     <a class="is-primary" href="<?= site_url('logout') ?>">Déconnexion</a>
                 </nav>

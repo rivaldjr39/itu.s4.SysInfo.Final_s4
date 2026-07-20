@@ -12,6 +12,12 @@ $routes->post('login', 'Login::authenticate');
 $routes->get('logout', 'Login::logout');
 $routes->get('dashboard', 'TransfertController::dashboard');
 
+$routes->group('depot', function ($routes) {
+    $routes->get('/', 'DepotController::index');
+    $routes->post('/', 'DepotController::deposer');
+    $routes->get('calculer-frais', 'DepotController::calculerFraisApi');
+});
+
 
 $routes->group('transfert', function ($routes) {
     $routes->get('/', 'TransfertController::index');
