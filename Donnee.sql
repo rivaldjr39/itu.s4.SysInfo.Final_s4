@@ -1,139 +1,101 @@
 -- ============================================================
--- OPERATEURS
+-- DONNÉES DE TEST - SYSTÈME DE BARÈMES PAR OPÉRÉRATEUR
 -- ============================================================
 
-INSERT INTO operateurs (nom) VALUES
-('MVOLA'),
-('ORANGE MONEY'),
-('AIRTEL MONEY');
-
 -- ============================================================
--- PREFIXES
+-- 1. OPÉRATEURS
 -- ============================================================
 
-INSERT INTO prefixes (prefixe,id_operateur,actif) VALUES
-('034',1,1),
-('038',1,1),
-('032',2,1),
-('037',2,1),
-('033',3,1);
+-- MVola est NOTRE opérateur (notre_operateur = 1)
+INSERT INTO operateurs (id, nom, notre_operateur) VALUES (1, 'MVola', 1);
+
+-- Les autres opérateurs (notre_operateur = 0)
+INSERT INTO operateurs (id, nom, notre_operateur) VALUES (2, 'Orange Money', 0);
+INSERT INTO operateurs (id, nom, notre_operateur) VALUES (3, 'Airtel Money', 0);
+
+
+
+-- MVola (opérateur 1) - NOTRE opérateur
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (1, '038', 1);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (2, '039', 1);
+
+-- Orange Money (opérateur 2)
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (3, '032', 2);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (4, '033', 2);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (5, '034', 2);
+
+-- Airtel Money (opérateur 3)
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (6, '031', 3);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (7, '037', 3);
 
 -- ============================================================
--- TYPES D'OPERATIONS
+-- 3. TYPES D'OPÉRATIONS
 -- ============================================================
 
-INSERT INTO types_operations (code,libelle,actif) VALUES
-('DEPOT','Dépôt',1),
-('RETRAIT','Retrait',1),
-('TRANSFERT','Transfert',1);
+INSERT INTO types_operations (id, code, libelle) VALUES (1, 'DEPOT', 'Dépôt');
+INSERT INTO types_operations (id, code, libelle) VALUES (2, 'RETRAIT', 'Retrait');
+INSERT INTO types_operations (id, code, libelle) VALUES (3, 'TRANSFERT', 'Transfert');
 
 -- ============================================================
--- STATUT
+-- 4. STATUTS
 -- ============================================================
-
 INSERT INTO statut(libelle) VALUES
 ('REUSSI'),
 ('ECHEC');
 
 -- ============================================================
--- BAREMES DES DEPOTS
+-- 5. CLIENTS
 -- ============================================================
 
-INSERT INTO baremes_frais
-(type_operation_id,montant_min,montant_max,frais_fixe)
-VALUES
-(1,0,999999999,0);
+-- Clients MVola (NOTRE opérateur - peuvent utiliser le système)
+INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
+VALUES (1, '0381234567', 'Jean Rakoto', 'CLIENT', 1);
+
+INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
+VALUES (2, '0399876543', 'Marie Andria', 'CLIENT', 2);
+
+INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
+VALUES (5, '0380000001', 'Admin System', 'ADMIN', 1);
+
+-- Clients d'autres opérateurs (peuvent se connecter mais pas de frais de barème)
+-- Client Orange Money
+INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
+VALUES (3, '0327654321', 'Pierre Ben', 'CLIENT', 3);
+
+-- Client Airtel Money
+INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
+VALUES (4, '0312345678', 'Sophie Lal', 'CLIENT', 6);
 
 -- ============================================================
--- BAREMES DES RETRAITS
+-- 6. COMPTES
 -- ============================================================
 
-INSERT INTO baremes_frais
-(type_operation_id,montant_min,montant_max,frais_fixe)
-VALUES
-(2,100,1000,50),
-(2,1001,5000,50),
-(2,5001,10000,100),
-(2,10001,25000,200),
-(2,25001,50000,400),
-(2,50001,100000,800),
-(2,100001,250000,1500),
-(2,250001,500000,1500),
-(2,500001,1000000,2500),
-(2,1000001,2000000,3000);
+INSERT INTO comptes (id, client_id, solde) VALUES (1, 1, 500000);
+INSERT INTO comptes (id, client_id, solde) VALUES (2, 2, 250000);
+INSERT INTO comptes (id, client_id, solde) VALUES (3, 3, 100000);
+INSERT INTO comptes (id, client_id, solde) VALUES (4, 4, 75000);
+INSERT INTO comptes (id, client_id, solde) VALUES (5, 5, 500000);
 
--- ============================================================
--- BAREMES DES TRANSFERTS
--- ============================================================
 
-INSERT INTO baremes_frais
-(type_operation_id,montant_min,montant_max,frais_fixe)
-VALUES
-(3,0,10000,200),
-(3,10001,50000,500),
-(3,50001,100000,1000),
-(3,100001,999999999,2000);
+INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
+VALUES (1, 3, 1, 1000, 10000, 500, 1.5);
 
--- ============================================================
--- COMMISSIONS PAR OPERATEUR
--- ============================================================
+INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
+VALUES (2, 3, 1, 10001, 100000, 1000, 2.0);
 
-INSERT INTO configurations_commissions
-(operateur_id,type_operation_id,autre_operateur,commission_pourcentage)
-VALUES
-(1,3,1,2.50),
-(2,3,1,3.00),
-(3,3,1,1.75);
+INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
+VALUES (3, 3, 1, 100001, 999999999, 2000, 2.5);
 
--- ============================================================
--- CLIENTS
--- ============================================================
+-- Retraits MVola
+INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
+VALUES (4, 2, 1, 1000, 20000, 300, 1.0);
 
-INSERT INTO client
-(numero_telephone,nom,role,prefixe_id)
-VALUES
-('0340000001','Administrateur','ADMIN',1),
-('0341234567','Jean','CLIENT',1),
-('0381111111','Paul','CLIENT',2),
-('0322222222','Marie','CLIENT',3),
-('0373333333','Luc','CLIENT',4),
-('0334444444','Alice','CLIENT',5),
-('0345555555','Bob','CLIENT',1),
-('0326666666','Sarah','CLIENT',3),
-('0377777777','Michel','CLIENT',4),
-('0338888888','Emma','CLIENT',5);
+INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
+VALUES (5, 2, 1, 20001, 100000, 800, 1.5);
 
--- ============================================================
--- COMPTES
--- ============================================================
+INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
+VALUES (6, 2, 1, 100001, 999999999, 1500, 2.0);
 
-INSERT INTO comptes(client_id,solde)
-VALUES
-(1,0),
-(2,500000),
-(3,250000),
-(4,800000),
-(5,120000),
-(6,50000),
-(7,300000),
-(8,150000),
-(9,75000),
-(10,450000);
 
--- ============================================================
--- OPERATIONS DE TEST
--- ============================================================
 
-INSERT INTO operations
-(reference,type_operation_id,compte_source_id,compte_destination_id,montant,frais,montant_total,bareme_frais_id,frais_inclus,statut)
-VALUES
-('OP000001',1,NULL,2,100000,0,100000,1,0,1),
-('OP000002',2,2,NULL,20000,200,20200,5,0,1),
-('OP000003',3,2,4,50000,500,50500,13,0,1),
-('OP000004',3,3,5,100000,1000,101000,14,1,1),
-('OP000005',2,4,NULL,300000,1500,301500,8,0,1),
-('OP000006',1,NULL,6,50000,0,50000,1,0,1),
-('OP000007',3,7,8,15000,500,15500,12,0,1),
-('OP000008',2,8,NULL,5000,50,5050,3,0,1),
-('OP000009',3,9,10,80000,1000,81000,13,1,1),
-('OP000010',1,NULL,3,250000,0,250000,1,0,1);
+

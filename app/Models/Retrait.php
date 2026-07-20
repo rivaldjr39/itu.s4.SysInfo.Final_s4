@@ -51,11 +51,25 @@ class Retrait extends Model
 
     // ------------------------------------------------------------
     // 1. Récupérer le barème de frais applicable à un montant donné
+    //    Seulement pour "notre opérateur"
     // ------------------------------------------------------------
-    public function getBaremeFrais(float $montant): ?array
+    public function getBaremeFrais(float $montant, ?int $operateurId = null): ?array
     {
-        $bareme = $this->db->table('baremes_frais')
-            ->select('COALESCE(id, rowid) AS id, type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage, date_debut, date_fin')
+        // Si l'opérateur est spécifié, vérifier que c'est notre opérateur
+        if ($operateurId !== null) {
+            $operateur = $this->db->table('operateurs')
+                ->select('notre_operateur')
+                ->where('id', $operateurId)
+                ->get()
+                ->getRowArray();
+
+            if (!$operateur || (int) ($operateur['notre_operateur'] ?? 0) !== 1) {
+                return null; // Pas de barème pour les autres opérateurs
+            }
+        }
+
+        $query = $this->db->table('baremes_frais')
+            ->select('COALESCE(id, rowid) AS id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage, date_debut, date_fin')
             ->where('type_operation_id', $this->typeOperationRetrait)
             ->where('montant_min <=', $montant)
             ->where('montant_max >=', $montant)
@@ -67,7 +81,7 @@ class Retrait extends Model
             ->get()
             ->getRowArray();
 
-        return $bareme ?: null;
+        return $query ?: null;
     }
 
     // ------------------------------------------------------------
@@ -137,7 +151,7 @@ class Retrait extends Model
     //    "automatique" : pas de destinataire, l'argent sort du système
     //    Retourne ['success' => bool, 'message' => string, 'reference' => string|null]
     // ------------------------------------------------------------
-    public function effectuerRetrait(string $numeroClient, float $montant): array
+    public function effectuerRetrait(string $numeroClient, float $montant, ?int $operateurId = null): array
     {
         if ($montant <= 0) {
             return ['success' => false, 'message' => 'Montant invalide.'];
@@ -149,13 +163,21 @@ class Retrait extends Model
             return ['success' => false, 'message' => "Le numéro $numeroClient n'existe pas."];
         }
 
-        $bareme = $this->getBaremeFrais($montant);
-        if (!$bareme) {
-            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
+        // Si l'opérateur n'est pas fourni, le récupérer depuis le compte
+        if ($operateurId === null) {
+            $operateurId = (int) ($compte['operateur_id'] ?? 0);
         }
 
-        $frais = $this->calculerFrais($bareme, $montant);
-        $montantTotal = $montant + $frais;
+        $bareme = $this->getBaremeFrais($montant, $operateurId);
+        
+        // Si pas de barème (autre opérateur), les frais sont nuls
+        if (!$bareme) {
+            $frais = 0.0;
+            $montantTotal = $montant;
+        } else {
+            $frais = $this->calculerFrais($bareme, $montant);
+            $montantTotal = $montant + $frais;
+        }
 
         if (!$this->soldeSuffisant($compte, $montantTotal)) {
             return ['success' => false, 'message' => 'Solde insuffisant (montant + frais).'];

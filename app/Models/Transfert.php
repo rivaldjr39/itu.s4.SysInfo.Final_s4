@@ -57,6 +57,17 @@ class Transfert extends Model
         return $this->statutCache[$libelle];
     }
 
+    protected function estNotreOperateur(int $operateurId): bool
+    {
+        $operateur = $this->db->table('operateurs')
+            ->select('notre_operateur')
+            ->where('id', $operateurId)
+            ->get()
+            ->getRowArray();
+
+        return $operateur && (int) ($operateur['notre_operateur'] ?? 0) === 1;
+    }
+
     protected function getCommissionInterOperateur(int $operateurId): float
     {
         if (isset($this->commissionCache[$operateurId])) {
@@ -84,7 +95,11 @@ class Transfert extends Model
 
     public function calculerFraisTransfert(array $bareme, float $montant, int $operateurSourceId, int $operateurDestinationId): array
     {
-        $fraisBase = $this->calculerFrais($bareme, $montant);
+        // Vérifier si l'opérateur source est "notre opérateur"
+        $estNotreOperateur = $this->estNotreOperateur($operateurSourceId);
+        
+        // Si ce n'est pas notre opérateur, les frais de base sont nuls
+        $fraisBase = $estNotreOperateur ? $this->calculerFrais($bareme, $montant) : 0.0;
         $commissionSupplementaire = 0.0;
 
         if ($operateurSourceId !== $operateurDestinationId) {
@@ -104,10 +119,17 @@ class Transfert extends Model
 
     // ------------------------------------------------------------
     // 1. Récupérer le barème de frais applicable à un montant donné
+    //    pour un opérateur spécifique (ou NULL pour tous les opérateurs)
+    //    Seulement pour "notre opérateur"
     // ------------------------------------------------------------
-    public function getBaremeFrais(float $montant): ?array
+    public function getBaremeFrais(float $montant, ?int $operateurId = null): ?array
     {
-        $bareme = $this->db->table('baremes_frais')
+        // Si l'opérateur est spécifié, vérifier que c'est notre opérateur
+        if ($operateurId !== null && !$this->estNotreOperateur($operateurId)) {
+            return null; // Pas de barème pour les autres opérateurs
+        }
+
+        $builder = $this->db->table('baremes_frais')
             ->where('type_operation_id', $this->typeOperationTransfert)
             ->where('montant_min <=', $montant)
             ->where('montant_max >=', $montant)
@@ -116,8 +138,9 @@ class Transfert extends Model
                 ->orWhere('date_fin >', date('Y-m-d H:i:s'))
             ->groupEnd()
             ->orderBy('date_debut', 'DESC')
-            ->get()
-            ->getRowArray();
+            ->get();
+
+        $bareme = $builder->getRowArray();
 
         return $bareme ?: null;
     }
@@ -152,13 +175,15 @@ class Transfert extends Model
 
     // ------------------------------------------------------------
     // 2 bis. Calculer les frais de retrait pour un montant donné
+    //          pour un opérateur spécifique
     // ------------------------------------------------------------
     public function calculerFraisRetrait(float $montant, int $operateurId): float
     {
-        // Récupérer le barème de frais de retrait pour ce montant
+        // Récupérer le barème de frais de retrait pour ce montant et cet opérateur
         $bareme = $this->db->table('baremes_frais')
-            ->select('COALESCE(id, rowid) AS id, type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage, date_debut, date_fin')
+            ->select('COALESCE(id, rowid) AS id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage, date_debut, date_fin')
             ->where('type_operation_id', $this->typeOperationRetrait)
+            ->where('operateur_id', $operateurId)
             ->where('montant_min <=', $montant)
             ->where('montant_max >=', $montant)
             ->groupStart()
@@ -166,6 +191,7 @@ class Transfert extends Model
                 ->orWhere('date_fin >', date('Y-m-d H:i:s'))
             ->groupEnd()
             ->orderBy('date_debut', 'DESC')
+            ->limit(1)
             ->get()
             ->getRowArray();
 
@@ -246,17 +272,26 @@ class Transfert extends Model
             return ['success' => false, 'message' => "Le numéro destinataire $numeroDestination n'existe pas."];
         }
 
-        $bareme = $this->getBaremeFrais($montant);
+        $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
+        $bareme = $this->getBaremeFrais($montant, $operateurSourceId);
+        
+        // Si pas de barème (autre opérateur), les frais de base sont 0
+        // Seule la commission inter-opérateur peut s'appliquer
         if (!$bareme) {
-            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
+            $fraisDetails = [
+                'frais_base' => 0.0,
+                'commission_supplementaire' => 0.0,
+                'frais_total' => 0.0,
+                'inter_operateur' => $operateurSourceId !== (int) ($compteDestination['operateur_id'] ?? 0),
+            ];
+        } else {
+            $fraisDetails = $this->calculerFraisTransfert(
+                $bareme,
+                $montant,
+                $operateurSourceId,
+                (int) ($compteDestination['operateur_id'] ?? 0)
+            );
         }
-
-        $fraisDetails = $this->calculerFraisTransfert(
-            $bareme,
-            $montant,
-            (int) ($compteSource['operateur_id'] ?? 0),
-            (int) ($compteDestination['operateur_id'] ?? 0)
-        );
 
         // Calculer les frais de retrait si l'option est activée
         $fraisRetrait = 0.0;

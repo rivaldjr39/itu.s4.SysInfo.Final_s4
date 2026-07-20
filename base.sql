@@ -7,6 +7,7 @@
 CREATE TABLE operateurs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nom TEXT NOT NULL UNIQUE,
+    notre_operateur BOOLEAN DEFAULT 0,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -41,13 +42,15 @@ CREATE TABLE types_operations (
 CREATE TABLE baremes_frais (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type_operation_id INTEGER NOT NULL,
+    operateur_id INTEGER,
     montant_min DECIMAL(15,2) NOT NULL,
     montant_max DECIMAL(15,2) NOT NULL,
     frais_fixe DECIMAL(15,2) DEFAULT 0,
     frais_pourcentage DECIMAL(5,2) DEFAULT 0,
     date_debut DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_fin DATETIME,
-    FOREIGN KEY (type_operation_id) REFERENCES types_operations(id)
+    FOREIGN KEY (type_operation_id) REFERENCES types_operations(id),
+    FOREIGN KEY (operateur_id) REFERENCES operateurs(id)
 );
 
 -- ============================================================
