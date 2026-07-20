@@ -10,6 +10,7 @@ class Transfert extends Model
     protected $table      = 'operations';
     protected $primaryKey = 'id';
 
+    // CodeIgniter utilise $allowedFields, pas $fillable (qui est du Laravel)
     protected $allowedFields = [
         'reference',
         'type_operation_id',
@@ -24,15 +25,20 @@ class Transfert extends Model
     ];
 
     protected $useTimestamps = false;
+
+    // ID du type d'opération "TRANSFERT" dans la table types_operations
     protected int $typeOperationTransfert = 3;
 
-    
+    // ------------------------------------------------------------
+    // 1. Récupérer le barème de frais applicable à un montant donné
+    // ------------------------------------------------------------
     public function getBaremeFrais(float $montant): ?array
     {
         $bareme = $this->db->table('baremes_frais')
             ->where('type_operation_id', $this->typeOperationTransfert)
             ->where('montant_min <=', $montant)
             ->where('montant_max >=', $montant)
+            ->where('actif', 1)
             ->groupStart()
                 ->where('date_fin IS NULL')
                 ->orWhere('date_fin >', date('Y-m-d H:i:s'))
@@ -40,16 +46,24 @@ class Transfert extends Model
             ->orderBy('date_debut', 'DESC')
             ->get()
             ->getRowArray();
+
         return $bareme ?: null;
     }
 
+    // ------------------------------------------------------------
+    // 2. Calculer le montant des frais à partir d'un barème
+    // ------------------------------------------------------------
     public function calculerFrais(array $bareme, float $montant): float
     {
         $fraisFixe = (float) $bareme['frais_fixe'];
         $fraisPourcentage = (float) $bareme['frais_pourcentage'];
+
         return round($fraisFixe + ($montant * $fraisPourcentage / 100), 2);
     }
 
+    // ------------------------------------------------------------
+    // 3. Trouver un compte à partir d'un numéro de téléphone
+    // ------------------------------------------------------------
     public function getCompteParNumero(string $numero): ?array
     {
         $compte = $this->db->table('comptes co')
@@ -62,18 +76,27 @@ class Transfert extends Model
         return $compte ?: null;
     }
 
-
+    // ------------------------------------------------------------
+    // 4. Vérifier que le compte source a un solde suffisant
+    //    (montant transféré + frais, si les frais sont à la charge de l'émetteur)
+    // ------------------------------------------------------------
     public function soldeSuffisant(array $compte, float $montantTotal): bool
     {
         return (float) $compte['solde'] >= $montantTotal;
     }
 
-
+    // ------------------------------------------------------------
+    // 5. Générer une référence unique pour l'opération
+    // ------------------------------------------------------------
     public function genererReference(): string
     {
         return 'TRF' . date('YmdHis') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
     }
 
+    // ------------------------------------------------------------
+    // 6. FONCTION PRINCIPALE : effectuer un transfert
+    //    Retourne ['success' => bool, 'message' => string, 'reference' => string|null]
+    // ------------------------------------------------------------
     public function effectuerTransfert(string $numeroSource, string $numeroDestination, float $montant): array
     {
         if ($montant <= 0) {
@@ -95,6 +118,10 @@ class Transfert extends Model
         }
 
         $bareme = $this->getBaremeFrais($montant);
+        if (!$bareme) {
+            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
+        }
+
         $frais = $this->calculerFrais($bareme, $montant);
         $montantTotal = $montant + $frais; // débité chez l'émetteur
 
@@ -103,6 +130,7 @@ class Transfert extends Model
         }
 
         $reference = $this->genererReference();
+
         $this->db->transStart();
 
         try {
@@ -150,13 +178,18 @@ class Transfert extends Model
         }
     }
 
-
+    // ------------------------------------------------------------
+    // 7. Historique des transferts d'un client (émis + reçus)
+    // ------------------------------------------------------------
     public function getHistoriqueTransferts(int $clientId, int $limite = 20): array
     {
         return $this->db->table('operations o')
-            ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client')
+            ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
+                      cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination')
             ->join('comptes cs', 'cs.id = o.compte_source_id', 'left')
             ->join('comptes cd', 'cd.id = o.compte_destination_id', 'left')
+            ->join('clients cls', 'cls.id = cs.client_id', 'left')
+            ->join('clients cld', 'cld.id = cd.client_id', 'left')
             ->where('o.type_operation_id', $this->typeOperationTransfert)
             ->groupStart()
                 ->where('cs.client_id', $clientId)

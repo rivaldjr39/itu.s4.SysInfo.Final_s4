@@ -13,7 +13,9 @@ class TransfertController extends BaseController
         $this->transfertModel = new Transfert();
     }
 
-    
+    // ------------------------------------------------------------
+    // Affiche le formulaire de transfert
+    // ------------------------------------------------------------
     public function index()
     {
         // Le numéro du client connecté est censé être en session
@@ -92,7 +94,9 @@ class TransfertController extends BaseController
         $historique = $this->transfertModel->getHistoriqueTransferts($client['id']);
 
         return view('client/transfert_historique', [
-            'historique' => $historique,
+            'historique'     => $historique,
+            'client_id'      => $client['id'],
+            'numero_client'  => $numeroClient,
         ]);
     }
 
