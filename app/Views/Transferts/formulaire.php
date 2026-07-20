@@ -320,6 +320,22 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                     <div class="frais-info" id="fraisInfo"></div>
                 </div>
 
+                <div class="field" style="margin-top: 18px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--ink); text-transform: none; letter-spacing: normal;">
+                        <input
+                            type="checkbox"
+                            id="inclure_frais_retrait"
+                            name="inclure_frais_retrait"
+                            value="1"
+                            style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--gold-dark);"
+                        >
+                        <span>Inclure les frais de retrait dans le montant total</span>
+                    </label>
+                    <div style="font-size: 12px; color: var(--ink-soft); margin-top: 6px; margin-left: 28px;">
+                        Si coché, les frais de retrait seront ajoutés au montant débité de votre compte
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-transferer">Confirmer le transfert</button>
             </form>
 
@@ -345,6 +361,7 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
     function calculerFrais() {
         const montant = parseFloat(montantInput.value);
         const numeroDestination = normaliserNumero(numeroDestinationInput.value);
+        const inclureFraisRetrait = document.getElementById('inclure_frais_retrait').checked;
 
         clearTimeout(timerId);
 
@@ -365,6 +382,7 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                 montant: montant,
                 numero_destination: numeroDestination,
                 numero_source: normaliserNumero(numeroSource),
+                inclure_frais_retrait: inclureFraisRetrait ? '1' : '0',
             });
 
             fetch(urlCalculFrais + '?' + params.toString(), {
@@ -382,18 +400,24 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
 
                     const fraisBase = Number(data.frais_base || 0).toLocaleString('fr-FR');
                     const commission = Number(data.commission_supplementaire || 0).toLocaleString('fr-FR');
+                    const fraisRetrait = Number(data.frais_retrait || 0).toLocaleString('fr-FR');
                     const total = Number(data.montant_total || 0).toLocaleString('fr-FR');
 
+                    let message = '';
                     if (data.inter_operateur) {
-                        fraisInfo.innerHTML =
-                            'Frais de transfert : ' + fraisBase + ' Ar' +
-                            ' — Commission opérateur destinataire : ' + commission + ' Ar' +
-                            ' — <span class="frais-total">Total débité : ' + total + ' Ar</span>';
+                        message = 'Frais de transfert : ' + fraisBase + ' Ar' +
+                                  ' — Commission opérateur destinataire : ' + commission + ' Ar';
                     } else {
-                        fraisInfo.innerHTML =
-                            'Frais : ' + fraisBase + ' Ar' +
-                            ' — <span class="frais-total">Total débité : ' + total + ' Ar</span>';
+                        message = 'Frais : ' + fraisBase + ' Ar';
                     }
+
+                    if (data.inclure_frais_retrait && data.frais_retrait > 0) {
+                        message += ' — Frais de retrait : ' + fraisRetrait + ' Ar';
+                    }
+
+                    message += ' — <span class="frais-total">Total débité : ' + total + ' Ar</span>';
+
+                    fraisInfo.innerHTML = message;
                 })
                 .catch(() => {
                     fraisInfo.textContent = 'Impossible de calculer les frais.';
@@ -403,6 +427,7 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
 
     montantInput.addEventListener('input', calculerFrais);
     numeroDestinationInput.addEventListener('input', calculerFrais);
+    document.getElementById('inclure_frais_retrait').addEventListener('change', calculerFrais);
 })();
 </script>
 

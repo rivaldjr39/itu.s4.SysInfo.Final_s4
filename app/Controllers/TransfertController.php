@@ -129,11 +129,13 @@ class TransfertController extends BaseController
         }
 
         $montant            = (float) $this->request->getPost('montant');
+        $inclureFraisRetrait = $this->request->getPost('inclure_frais_retrait') === '1';
 
         $resultat = $this->transfertModel->effectuerTransfert(
             $numeroSource,
             $numeroDestination,
-            $montant
+            $montant,
+            $inclureFraisRetrait
         );
 
         if (!$resultat['success']) {
@@ -147,6 +149,10 @@ class TransfertController extends BaseController
 
         if (isset($resultat['commission_supplementaire']) && (float) $resultat['commission_supplementaire'] > 0) {
             $message .= ' dont commission opérateur destinataire : ' . $resultat['commission_supplementaire'] . ' Ar';
+        }
+
+        if (isset($resultat['frais_retrait']) && (float) $resultat['frais_retrait'] > 0) {
+            $message .= ' — Frais de retrait : ' . $resultat['frais_retrait'] . ' Ar';
         }
 
         return redirect()->to('/transfert')
@@ -183,6 +189,7 @@ class TransfertController extends BaseController
         $montant = (float) $this->request->getGet('montant');
         $numeroDestination = $this->normaliserNumeroTelephone((string) $this->request->getGet('numero_destination'));
         $numeroSource = $this->normaliserNumeroTelephone((string) session()->get('numero_telephone'));
+        $inclureFraisRetrait = $this->request->getGet('inclure_frais_retrait') === '1';
 
         if ($montant <= 0) {
             return $this->response->setJSON([
@@ -205,6 +212,7 @@ class TransfertController extends BaseController
             'frais_base' => $this->transfertModel->calculerFrais($bareme, $montant),
             'commission_supplementaire' => 0.0,
             'frais_total' => $this->transfertModel->calculerFrais($bareme, $montant),
+            'frais_retrait' => 0.0,
         ];
 
         if ($numeroDestination !== '') {
@@ -231,6 +239,14 @@ class TransfertController extends BaseController
                 (int) ($compteSource['operateur_id'] ?? 0),
                 (int) ($compteDestination['operateur_id'] ?? 0)
             );
+
+            // Calculer les frais de retrait si l'option est activée
+            if ($inclureFraisRetrait) {
+                $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
+                $fraisRetrait = $this->transfertModel->calculerFraisRetrait($montant, $operateurSourceId);
+                $fraisDetails['frais_retrait'] = $fraisRetrait;
+                $fraisDetails['frais_total'] += $fraisRetrait;
+            }
         }
 
         return $this->response->setJSON([
@@ -238,8 +254,10 @@ class TransfertController extends BaseController
             'inter_operateur'           => (bool) $fraisDetails['inter_operateur'],
             'frais_base'                => $fraisDetails['frais_base'],
             'commission_supplementaire' => $fraisDetails['commission_supplementaire'],
+            'frais_retrait'             => $fraisDetails['frais_retrait'],
             'frais'                     => $fraisDetails['frais_total'],
             'montant_total'             => $montant + $fraisDetails['frais_total'],
+            'inclure_frais_retrait'     => $inclureFraisRetrait,
         ]);
     }
 
@@ -350,6 +368,7 @@ class TransfertController extends BaseController
         $numeroSource = $this->normaliserNumeroTelephone($this->request->getPost('numero_source'));
         $numeroDestination = $this->normaliserNumeroTelephone($this->request->getPost('numero_destination'));
         $montant = (float) $this->request->getPost('montant');
+        $inclureFraisRetrait = $this->request->getPost('inclure_frais_retrait') === '1';
 
         if (!$this->validate([
             'montant' => 'required|numeric|greater_than[0]',
@@ -370,7 +389,8 @@ class TransfertController extends BaseController
         $resultat = $this->transfertModel->effectuerTransfert(
             $numeroSource,
             $numeroDestination,
-            $montant
+            $montant,
+            $inclureFraisRetrait
         );
 
         $statusCode = $resultat['success'] ? 200 : 400;

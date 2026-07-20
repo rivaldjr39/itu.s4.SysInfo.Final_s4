@@ -20,6 +20,7 @@ class Transfert extends Model
         'frais',
         'montant_total',
         'bareme_frais_id',
+        'frais_inclus',
         'statut',
         'date_operation',
     ];
@@ -150,6 +151,35 @@ class Transfert extends Model
     }
 
     // ------------------------------------------------------------
+    // 2 bis. Calculer les frais de retrait pour un montant donné
+    // ------------------------------------------------------------
+    public function calculerFraisRetrait(float $montant, int $operateurId): float
+    {
+        // Récupérer le barème de frais de retrait pour ce montant
+        $bareme = $this->db->table('baremes_frais')
+            ->select('COALESCE(id, rowid) AS id, type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage, date_debut, date_fin')
+            ->where('type_operation_id', $this->typeOperationRetrait)
+            ->where('montant_min <=', $montant)
+            ->where('montant_max >=', $montant)
+            ->groupStart()
+                ->where('date_fin IS NULL', null, false)
+                ->orWhere('date_fin >', date('Y-m-d H:i:s'))
+            ->groupEnd()
+            ->orderBy('date_debut', 'DESC')
+            ->get()
+            ->getRowArray();
+
+        if (!$bareme) {
+            return 0.0;
+        }
+
+        $fraisFixe = (float) $bareme['frais_fixe'];
+        $fraisPourcentage = (float) $bareme['frais_pourcentage'];
+
+        return round($fraisFixe + ($montant * $fraisPourcentage / 100), 2);
+    }
+
+    // ------------------------------------------------------------
     // 3. Trouver un compte à partir d'un numéro de téléphone
     // ------------------------------------------------------------
     public function getCompteParNumero(string $numero): ?array
@@ -193,7 +223,7 @@ class Transfert extends Model
     // 6. FONCTION PRINCIPALE : effectuer un transfert
     //    Retourne ['success' => bool, 'message' => string, 'reference' => string|null]
     // ------------------------------------------------------------
-    public function effectuerTransfert(string $numeroSource, string $numeroDestination, float $montant): array
+    public function effectuerTransfert(string $numeroSource, string $numeroDestination, float $montant, bool $inclureFraisRetrait = false): array
     {
         $numeroSource = $this->normaliserNumeroTelephone($numeroSource);
         $numeroDestination = $this->normaliserNumeroTelephone($numeroDestination);
@@ -227,6 +257,16 @@ class Transfert extends Model
             (int) ($compteSource['operateur_id'] ?? 0),
             (int) ($compteDestination['operateur_id'] ?? 0)
         );
+
+        // Calculer les frais de retrait si l'option est activée
+        $fraisRetrait = 0.0;
+        if ($inclureFraisRetrait) {
+            $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
+            $fraisRetrait = $this->calculerFraisRetrait($montant, $operateurSourceId);
+            $fraisDetails['frais_total'] += $fraisRetrait;
+            $fraisDetails['frais_retrait'] = $fraisRetrait;
+        }
+
         $montantTotal = $montant + $fraisDetails['frais_total'];
 
         if (!$this->soldeSuffisant($compteSource, $montantTotal)) {
@@ -260,6 +300,7 @@ class Transfert extends Model
                 'frais'                  => $fraisDetails['frais_total'],
                 'montant_total'          => $montantTotal,
                 'bareme_frais_id'        => $bareme['id'],
+                'frais_inclus'           => $inclureFraisRetrait ? 1 : 0,
                 'statut'                 => $this->getStatutId('REUSSI'),
                 'date_operation'         => date('Y-m-d H:i:s'),
             ]);
@@ -277,6 +318,7 @@ class Transfert extends Model
                 'frais'     => $fraisDetails['frais_total'],
                 'frais_base' => $fraisDetails['frais_base'],
                 'commission_supplementaire' => $fraisDetails['commission_supplementaire'],
+                'frais_retrait' => $fraisRetrait,
             ];
         } catch (Exception $e) {
             $this->db->transRollback();
