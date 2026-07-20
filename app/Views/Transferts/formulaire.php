@@ -262,6 +262,9 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
             <div class="info-banner">
                 Accédez au <a class="dashboard-link" href="<?= site_url('dashboard') ?>">dashboard</a> pour voir vos chiffres clés avant d'effectuer un transfert.
             </div>
+            <div class="info-banner" style="background: rgba(217, 164, 65, 0.12); color: var(--teal-800); border-color: rgba(217, 164, 65, 0.28);">
+                Si le destinataire appartient à un autre opérateur, une commission additionnelle s'ajoute en plus du frais de transfert.
+            </div>
 
             <?php if (session()->getFlashdata('success')): ?>
                 <div class="flash success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -328,13 +331,20 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
 <script>
 (function () {
     const montantInput = document.getElementById('montant');
+    const numeroDestinationInput = document.getElementById('numero_destination');
     const fraisInfo = document.getElementById('fraisInfo');
     const urlCalculFrais = "<?= site_url('transfert/calculer-frais') ?>";
+    const numeroSource = "<?= esc($numero_client) ?>";
 
     let timerId = null;
 
-    montantInput.addEventListener('input', function () {
+    function normaliserNumero(numero) {
+        return (numero || '').replace(/\D+/g, '');
+    }
+
+    function calculerFrais() {
         const montant = parseFloat(montantInput.value);
+        const numeroDestination = normaliserNumero(numeroDestinationInput.value);
 
         clearTimeout(timerId);
 
@@ -343,10 +353,21 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
             return;
         }
 
+        if (!numeroDestination || numeroDestination.length < 10) {
+            fraisInfo.textContent = 'Saisissez le numéro destinataire pour calculer la commission exacte.';
+            return;
+        }
+
         fraisInfo.textContent = 'Calcul des frais…';
 
         timerId = setTimeout(() => {
-            fetch(urlCalculFrais + '?montant=' + encodeURIComponent(montant), {
+            const params = new URLSearchParams({
+                montant: montant,
+                numero_destination: numeroDestination,
+                numero_source: normaliserNumero(numeroSource),
+            });
+
+            fetch(urlCalculFrais + '?' + params.toString(), {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
                 .then((res) => {
@@ -358,16 +379,30 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                         fraisInfo.textContent = data.message || 'Impossible de calculer les frais.';
                         return;
                     }
-                    fraisInfo.innerHTML =
-                        'Frais : ' + data.frais.toLocaleString('fr-FR') + ' Ar' +
-                        ' — <span class="frais-total">Total débité : ' +
-                        data.montant_total.toLocaleString('fr-FR') + ' Ar</span>';
+
+                    const fraisBase = Number(data.frais_base || 0).toLocaleString('fr-FR');
+                    const commission = Number(data.commission_supplementaire || 0).toLocaleString('fr-FR');
+                    const total = Number(data.montant_total || 0).toLocaleString('fr-FR');
+
+                    if (data.inter_operateur) {
+                        fraisInfo.innerHTML =
+                            'Frais de transfert : ' + fraisBase + ' Ar' +
+                            ' — Commission opérateur destinataire : ' + commission + ' Ar' +
+                            ' — <span class="frais-total">Total débité : ' + total + ' Ar</span>';
+                    } else {
+                        fraisInfo.innerHTML =
+                            'Frais : ' + fraisBase + ' Ar' +
+                            ' — <span class="frais-total">Total débité : ' + total + ' Ar</span>';
+                    }
                 })
                 .catch(() => {
                     fraisInfo.textContent = 'Impossible de calculer les frais.';
                 });
         }, 350);
-    });
+    }
+
+    montantInput.addEventListener('input', calculerFrais);
+    numeroDestinationInput.addEventListener('input', calculerFrais);
 })();
 </script>
 

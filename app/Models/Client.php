@@ -18,8 +18,19 @@ class Client extends Model
 
     protected $useTimestamps = false;
 
+    protected function normaliserNumeroTelephone(string $numeroTelephone): string
+    {
+        return preg_replace('/\D+/', '', $numeroTelephone) ?? '';
+    }
+
     public function findByNumeroTelephone(string $numeroTelephone): ?array
     {
+        $numeroTelephone = $this->normaliserNumeroTelephone($numeroTelephone);
+
+        if ($numeroTelephone === '') {
+            return null;
+        }
+
         foreach (['client', 'clients'] as $table) {
             try {
                 $client = $this->db->table($table)

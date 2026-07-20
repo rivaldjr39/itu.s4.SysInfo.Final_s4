@@ -82,6 +82,9 @@
   - Creations du table configurations_commissions
   - insertions du donnes 
 
+## Etape 2: 
+
+
 ## cote client
 - Envoi multiple vers plusieurs numéros ( divisé le montant pour chaque numéro)
     - [x] Fonction js (addRecipientField, updateRepartition, calcul frais dynamique)
