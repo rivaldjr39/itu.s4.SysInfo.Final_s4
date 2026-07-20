@@ -29,6 +29,12 @@ class Transfert extends Model
     // ID du type d'opération "TRANSFERT" dans la table types_operations
     protected int $typeOperationTransfert = 3;
     protected array $statutCache = [];
+    protected array $commissionCache = [];
+
+    protected function normaliserNumeroTelephone(string $numero): string
+    {
+        return preg_replace('/\D+/', '', $numero) ?? '';
+    }
 
     protected function getStatutId(string $libelle): int
     {
@@ -48,6 +54,51 @@ class Transfert extends Model
         $this->statutCache[$libelle] = (int) $statut['id'];
 
         return $this->statutCache[$libelle];
+    }
+
+    protected function getCommissionInterOperateur(int $operateurId): float
+    {
+        if (isset($this->commissionCache[$operateurId])) {
+            return $this->commissionCache[$operateurId];
+        }
+
+        $commission = $this->db->table('configurations_commissions')
+            ->select('commission_pourcentage')
+            ->where('operateur_id', $operateurId)
+            ->where('type_operation_id', $this->typeOperationTransfert)
+            ->where('autre_operateur', 1)
+            ->groupStart()
+                ->where('date_fin IS NULL', null, false)
+                ->orWhere('date_fin >', date('Y-m-d H:i:s'))
+            ->groupEnd()
+            ->orderBy('date_debut', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+
+        $this->commissionCache[$operateurId] = $commission ? (float) $commission['commission_pourcentage'] : 0.0;
+
+        return $this->commissionCache[$operateurId];
+    }
+
+    public function calculerFraisTransfert(array $bareme, float $montant, int $operateurSourceId, int $operateurDestinationId): array
+    {
+        $fraisBase = $this->calculerFrais($bareme, $montant);
+        $commissionSupplementaire = 0.0;
+
+        if ($operateurSourceId !== $operateurDestinationId) {
+            $commissionSupplementaire = round(
+                $montant * $this->getCommissionInterOperateur($operateurDestinationId) / 100,
+                2
+            );
+        }
+
+        return [
+            'frais_base' => $fraisBase,
+            'commission_supplementaire' => $commissionSupplementaire,
+            'frais_total' => round($fraisBase + $commissionSupplementaire, 2),
+            'inter_operateur' => $operateurSourceId !== $operateurDestinationId,
+        ];
     }
 
     // ------------------------------------------------------------
@@ -103,9 +154,16 @@ class Transfert extends Model
     // ------------------------------------------------------------
     public function getCompteParNumero(string $numero): ?array
     {
+        $numero = $this->normaliserNumeroTelephone($numero);
+
+        if ($numero === '') {
+            return null;
+        }
+
         $compte = $this->db->table('comptes co')
-            ->select('COALESCE(co.id, co.rowid) AS id, co.client_id, co.solde, co.date_creation')
+            ->select('COALESCE(co.id, co.rowid) AS id, co.client_id, co.solde, co.date_creation, cl.prefixe_id, p.id_operateur AS operateur_id')
             ->join('client cl', 'COALESCE(cl.id, cl.rowid) = co.client_id')
+            ->join('prefixes p', 'COALESCE(p.id, p.rowid) = cl.prefixe_id', 'left')
             ->where('cl.numero_telephone', $numero)
             ->limit(1)
             ->get()
@@ -137,6 +195,9 @@ class Transfert extends Model
     // ------------------------------------------------------------
     public function effectuerTransfert(string $numeroSource, string $numeroDestination, float $montant): array
     {
+        $numeroSource = $this->normaliserNumeroTelephone($numeroSource);
+        $numeroDestination = $this->normaliserNumeroTelephone($numeroDestination);
+
         if ($montant <= 0) {
             return ['success' => false, 'message' => 'Montant invalide.'];
         }
@@ -160,8 +221,13 @@ class Transfert extends Model
             return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
         }
 
-        $frais = $this->calculerFrais($bareme, $montant);
-        $montantTotal = $montant + $frais;
+        $fraisDetails = $this->calculerFraisTransfert(
+            $bareme,
+            $montant,
+            (int) ($compteSource['operateur_id'] ?? 0),
+            (int) ($compteDestination['operateur_id'] ?? 0)
+        );
+        $montantTotal = $montant + $fraisDetails['frais_total'];
 
         if (!$this->soldeSuffisant($compteSource, $montantTotal)) {
             return ['success' => false, 'message' => 'Solde insuffisant (montant + frais).'];
@@ -191,7 +257,7 @@ class Transfert extends Model
                 'compte_source_id'       => $compteSource['id'],
                 'compte_destination_id'  => $compteDestination['id'],
                 'montant'                => $montant,
-                'frais'                  => $frais,
+                'frais'                  => $fraisDetails['frais_total'],
                 'montant_total'          => $montantTotal,
                 'bareme_frais_id'        => $bareme['id'],
                 'statut'                 => $this->getStatutId('REUSSI'),
@@ -208,7 +274,9 @@ class Transfert extends Model
                 'success'   => true,
                 'message'   => 'Transfert effectué avec succès.',
                 'reference' => $reference,
-                'frais'     => $frais,
+                'frais'     => $fraisDetails['frais_total'],
+                'frais_base' => $fraisDetails['frais_base'],
+                'commission_supplementaire' => $fraisDetails['commission_supplementaire'],
             ];
         } catch (Exception $e) {
             $this->db->transRollback();
@@ -218,6 +286,8 @@ class Transfert extends Model
 
     public function effectuerTransfertsMultiple(string $numeroSource, array $numerosDestinations, float $montantTotal): array
     {
+        $numeroSource = $this->normaliserNumeroTelephone($numeroSource);
+
         $totalRecipients = count($numerosDestinations);
 
         if ($totalRecipients < 2) {
@@ -241,24 +311,11 @@ class Transfert extends Model
             return ['success' => false, 'message' => "Le numéro émetteur $numeroSource n'existe pas."];
         }
 
-        // Calculer les frais pour ce montant unitaire
-        $bareme = $this->getBaremeFrais($montantParPersonne);
-        if (!$bareme) {
-            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
-        }
-
-        $fraisParTransfert = $this->calculerFrais($bareme, $montantParPersonne);
-        $montantTotalParTransfert = $montantParPersonne + $fraisParTransfert;
-        $montantTotalADebiter = $montantTotalParTransfert * $totalRecipients;
-
-        // Vérifier le solde
-        if (!$this->soldeSuffisant($compteSource, $montantTotalADebiter)) {
-            return ['success' => false, 'message' => 'Solde insuffisant pour effectuer tous les transferts.'];
-        }
-
         // Vérifier que tous les destinataires existent et ne sont pas l'émetteur
         $comptesDestinations = [];
         foreach ($numerosDestinations as $numero) {
+            $numero = $this->normaliserNumeroTelephone($numero);
+
             if ($numero === $numeroSource) {
                 return ['success' => false, 'message' => 'Impossible de transférer vers son propre numéro (' . $numero . ').'];
             }
@@ -271,11 +328,37 @@ class Transfert extends Model
             $comptesDestinations[] = $compte;
         }
 
+        // Calculer les frais pour ce montant unitaire et estimer le débit total réel
+        $bareme = $this->getBaremeFrais($montantParPersonne);
+        if (!$bareme) {
+            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
+        }
+
+        $detailsPrecalculs = [];
+        $montantTotalADebiter = 0.0;
+        foreach ($comptesDestinations as $compteDest) {
+            $fraisDetails = $this->calculerFraisTransfert(
+                $bareme,
+                $montantParPersonne,
+                (int) ($compteSource['operateur_id'] ?? 0),
+                (int) ($compteDest['operateur_id'] ?? 0)
+            );
+
+            $detailsPrecalculs[] = $fraisDetails;
+            $montantTotalADebiter += $montantParPersonne + $fraisDetails['frais_total'];
+        }
+
+        // Vérifier le solde
+        if (!$this->soldeSuffisant($compteSource, $montantTotalADebiter)) {
+            return ['success' => false, 'message' => 'Solde insuffisant pour effectuer tous les transferts.'];
+        }
+
         $this->db->transStart();
 
         try {
             $references = [];
             $details = [];
+            $fraisTotal = 0.0;
 
             // Débiter le compte source du montant total
             $this->db->table('comptes')
@@ -284,6 +367,8 @@ class Transfert extends Model
                 ->update();
 
             foreach ($comptesDestinations as $i => $compteDest) {
+                $fraisDetails = $detailsPrecalculs[$i];
+
                 // Créditer chaque destination
                 $this->db->table('comptes')
                     ->where('client_id', $compteDest['client_id'])
@@ -299,18 +384,21 @@ class Transfert extends Model
                     'compte_source_id'       => $compteSource['id'],
                     'compte_destination_id'  => $compteDest['id'],
                     'montant'                => $montantParPersonne,
-                    'frais'                  => $fraisParTransfert,
-                    'montant_total'          => $montantTotalParTransfert,
+                    'frais'                  => $fraisDetails['frais_total'],
+                    'montant_total'          => $montantParPersonne + $fraisDetails['frais_total'],
                     'bareme_frais_id'        => $bareme['id'],
                     'statut'                 => $this->getStatutId('REUSSI'),
                     'date_operation'         => date('Y-m-d H:i:s'),
                 ]);
 
                 $references[] = $reference;
+                $fraisTotal += $fraisDetails['frais_total'];
                 $details[] = [
                     'numero'     => $numerosDestinations[$i],
                     'montant'    => $montantParPersonne,
-                    'frais'      => $fraisParTransfert,
+                    'frais'      => $fraisDetails['frais_total'],
+                    'frais_base' => $fraisDetails['frais_base'],
+                    'commission_supplementaire' => $fraisDetails['commission_supplementaire'],
                     'reference'  => $reference,
                 ];
             }
@@ -325,7 +413,7 @@ class Transfert extends Model
                 'success'    => true,
                 'message'    => count($details) . ' transfert(s) effectué(s) avec succès.',
                 'details'    => $details,
-                'frais_total' => $fraisParTransfert * $totalRecipients,
+                'frais_total' => $fraisTotal,
                 'montant_par_personne' => $montantParPersonne,
             ];
         } catch (Exception $e) {

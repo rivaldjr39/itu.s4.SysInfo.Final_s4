@@ -47,6 +47,16 @@ class TransfertController extends BaseController
         ];
     }
 
+    private function normaliserNumeroTelephone(?string $numero): string
+    {
+        return preg_replace('/\D+/', '', (string) $numero) ?? '';
+    }
+
+    private function numeroTelephoneValide(string $numero): bool
+    {
+        return strlen($numero) >= 10 && strlen($numero) <= 15;
+    }
+
     // ------------------------------------------------------------
     // Affiche le formulaire de transfert
     // ------------------------------------------------------------
@@ -96,24 +106,28 @@ class TransfertController extends BaseController
     // ------------------------------------------------------------
     public function transferer()
     {
-        $numeroSource = session()->get('numero_telephone');
+        $numeroSource = $this->normaliserNumeroTelephone((string) session()->get('numero_telephone'));
 
         if (!$numeroSource) {
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        $rules = [
-            'numero_destination' => 'required|min_length[10]|max_length[15]',
-            'montant'            => 'required|numeric|greater_than[0]',
-        ];
-
-        if (!$this->validate($rules)) {
+        if (!$this->validate([
+            'montant' => 'required|numeric|greater_than[0]',
+        ])) {
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
         }
 
-        $numeroDestination = $this->request->getPost('numero_destination');
+        $numeroDestination = $this->normaliserNumeroTelephone($this->request->getPost('numero_destination'));
+
+        if (!$this->numeroTelephoneValide($numeroDestination)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Veuillez saisir un numéro destinataire valide.');
+        }
+
         $montant            = (float) $this->request->getPost('montant');
 
         $resultat = $this->transfertModel->effectuerTransfert(
@@ -128,8 +142,15 @@ class TransfertController extends BaseController
                 ->with('error', $resultat['message']);
         }
 
+        $message = $resultat['message'] . ' Référence : ' . $resultat['reference'];
+        $message .= ' — Frais : ' . $resultat['frais'] . ' Ar';
+
+        if (isset($resultat['commission_supplementaire']) && (float) $resultat['commission_supplementaire'] > 0) {
+            $message .= ' dont commission opérateur destinataire : ' . $resultat['commission_supplementaire'] . ' Ar';
+        }
+
         return redirect()->to('/transfert')
-            ->with('success', $resultat['message'] . ' Référence : ' . $resultat['reference'] . ' — Frais : ' . $resultat['frais'] . ' Ar');
+            ->with('success', $message);
     }
 
     // ------------------------------------------------------------
@@ -160,6 +181,8 @@ class TransfertController extends BaseController
     public function calculerFraisApi()
     {
         $montant = (float) $this->request->getGet('montant');
+        $numeroDestination = $this->normaliserNumeroTelephone((string) $this->request->getGet('numero_destination'));
+        $numeroSource = $this->normaliserNumeroTelephone((string) session()->get('numero_telephone'));
 
         if ($montant <= 0) {
             return $this->response->setJSON([
@@ -177,12 +200,46 @@ class TransfertController extends BaseController
             ])->setStatusCode(404);
         }
 
-        $frais = $this->transfertModel->calculerFrais($bareme, $montant);
+        $fraisDetails = [
+            'inter_operateur' => false,
+            'frais_base' => $this->transfertModel->calculerFrais($bareme, $montant),
+            'commission_supplementaire' => 0.0,
+            'frais_total' => $this->transfertModel->calculerFrais($bareme, $montant),
+        ];
+
+        if ($numeroDestination !== '') {
+            if (!$this->numeroTelephoneValide($numeroDestination)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Numéro destinataire invalide.',
+                ])->setStatusCode(422);
+            }
+
+            $compteSource = $this->transfertModel->getCompteParNumero($numeroSource);
+            $compteDestination = $this->transfertModel->getCompteParNumero($numeroDestination);
+
+            if (!$compteSource || !$compteDestination) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Numéro source ou destinataire introuvable.',
+                ])->setStatusCode(404);
+            }
+
+            $fraisDetails = $this->transfertModel->calculerFraisTransfert(
+                $bareme,
+                $montant,
+                (int) ($compteSource['operateur_id'] ?? 0),
+                (int) ($compteDestination['operateur_id'] ?? 0)
+            );
+        }
 
         return $this->response->setJSON([
-            'success'       => true,
-            'frais'         => $frais,
-            'montant_total' => $montant + $frais,
+            'success'                   => true,
+            'inter_operateur'           => (bool) $fraisDetails['inter_operateur'],
+            'frais_base'                => $fraisDetails['frais_base'],
+            'commission_supplementaire' => $fraisDetails['commission_supplementaire'],
+            'frais'                     => $fraisDetails['frais_total'],
+            'montant_total'             => $montant + $fraisDetails['frais_total'],
         ]);
     }
 
@@ -290,20 +347,23 @@ class TransfertController extends BaseController
     // ------------------------------------------------------------
     public function transfererApi()
     {
-        $numeroSource = $this->request->getPost('numero_source');
-        $numeroDestination = $this->request->getPost('numero_destination');
+        $numeroSource = $this->normaliserNumeroTelephone($this->request->getPost('numero_source'));
+        $numeroDestination = $this->normaliserNumeroTelephone($this->request->getPost('numero_destination'));
         $montant = (float) $this->request->getPost('montant');
 
-        $rules = [
-            'numero_source'      => 'required|min_length[10]|max_length[15]',
-            'numero_destination' => 'required|min_length[10]|max_length[15]',
-            'montant'            => 'required|numeric|greater_than[0]',
-        ];
-
-        if (!$this->validate($rules)) {
+        if (!$this->validate([
+            'montant' => 'required|numeric|greater_than[0]',
+        ])) {
             return $this->response->setJSON([
                 'success' => false,
                 'errors'  => $this->validator->getErrors(),
+            ])->setStatusCode(422);
+        }
+
+        if (!$this->numeroTelephoneValide($numeroSource) || !$this->numeroTelephoneValide($numeroDestination)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Numéro source ou destinataire invalide.',
             ])->setStatusCode(422);
         }
 
