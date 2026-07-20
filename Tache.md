@@ -1,12 +1,12 @@
-# Examen projet final s4 : Operateur mobile money 
-## Partie 1 : Etape 1
+# Examen projet final s4 : Operateur mobile money 
+## Partie 1 : Etape 1
 - Lecture et comprehension du sujet : Rivaldo, Tommy 
 - Creation de repository git : Rivaldo(ok)
 - Initialisation de Codeigniter 4 : Rivaldo(ok)
 - Configuaration de base SQLite3 : Tommy(ok)
 - Envoye de lien git sur le formualire : Tommy(ok)
 
-## Partie 1: Etape 2 : Conception du base 
+## Partie 1: Etape 2 : Conception du base 
 
 
 ## Transfert : Tommy
@@ -73,3 +73,35 @@
   - function pour prendre les baremes de depot getBaremeFrais(float $montant):Rivaldo(ok)
   - function pour prendre le compte et solde du client  getCompteParClientId() et vgetSolde(int $clientId) :Rivaldo(ok)
   - fonction pour efectuer le depot  effectuerDepot(int $clientId, float $montant): Rivaldo(ok)
+
+# V2
+
+## cote client
+- Envoi multiple vers plusieurs numéros ( divisé le montant pour chaque numéro)
+    - [x] Fonction js (addRecipientField, updateRepartition, calcul frais dynamique)
+    - [x] Vue multiple.php (formulaire avec champs dynamiques, suppression, ajout)
+    - [x] Controller : methodes multiple() et transfererMultiple()
+    - [x] Model : effectuerTransfertsMultiple()
+    - [x] Routes : GET/POST /transfert/multiple
+    - [x] Lien navigation depuis formulaire simple
+
+## Situation gain via les frais (retrait + transfert) : Tommy
+- [x] Model : getStatsFrais() avec regroupement par operateur (retraits, transferts meme operateur, transferts autre operateur)
+- [x] Controller : gainsFrais() avec filtrage par date et restriction admin
+- [x] Vue : admin/gains_frais.php avec 4 tableaux separes (Retraits, Transferts meme operateur, Transferts autre operateur, Recapitulatif general)
+- [x] Route : GET /admin/gains-frais
+- [x] Lien navigation admin : "Gains Frais" dans le layout client.php
+- [x] Filtre par periode (date debut / date fin)
+- [x] Cartes de synthese (total frais, nombre operations, montant brut)
+
+## Gestion des commissions par operateur : Tommy
+- [x] Controller : CommissionController (index, store, update, delete)
+- [x] Vue : admin/commissions/index.php avec tableau + modal CRUD
+- [x] Routes : admin/commissions (GET, POST store, POST update/:id, GET delete/:id)
+- [x] Lien navigation admin : "Commissions" dans le layout client.php
+
+## Gestion des prefixes des operateurs : Tommy
+- [x] Controller : PrefixeController (index, store, update, delete, getByOperateurApi)
+- [x] Vue : admin/prefixes/index.php avec tableau + modal CRUD
+- [x] Routes : admin/prefixes (GET, POST store, POST update/:id, GET delete/:id, GET api/operateur/:id)
+- [x] Lien navigation admin : "Préfixes" dans le layout client.php

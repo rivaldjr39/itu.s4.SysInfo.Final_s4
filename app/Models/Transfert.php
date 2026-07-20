@@ -216,18 +216,136 @@ class Transfert extends Model
         }
     }
 
-    // ------------------------------------------------------------
-    // 7. Historique des transferts d'un client (émis + reçus)
-    // ------------------------------------------------------------
+    public function effectuerTransfertsMultiple(string $numeroSource, array $numerosDestinations, float $montantTotal): array
+    {
+        $totalRecipients = count($numerosDestinations);
+
+        if ($totalRecipients < 2) {
+            return ['success' => false, 'message' => 'Veuillez spécifier au moins deux destinataires.'];
+        }
+
+        if ($montantTotal <= 0) {
+            return ['success' => false, 'message' => 'Montant total invalide.'];
+        }
+
+        // Montant pour chaque destinataire (arrondi à l'ariary inférieur)
+        $montantParPersonne = floor($montantTotal / $totalRecipients);
+
+        if ($montantParPersonne <= 0) {
+            return ['success' => false, 'message' => 'Le montant par bénéficiaire est trop faible.'];
+        }
+
+        // Vérifier le compte source
+        $compteSource = $this->getCompteParNumero($numeroSource);
+        if (!$compteSource) {
+            return ['success' => false, 'message' => "Le numéro émetteur $numeroSource n'existe pas."];
+        }
+
+        // Calculer les frais pour ce montant unitaire
+        $bareme = $this->getBaremeFrais($montantParPersonne);
+        if (!$bareme) {
+            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
+        }
+
+        $fraisParTransfert = $this->calculerFrais($bareme, $montantParPersonne);
+        $montantTotalParTransfert = $montantParPersonne + $fraisParTransfert;
+        $montantTotalADebiter = $montantTotalParTransfert * $totalRecipients;
+
+        // Vérifier le solde
+        if (!$this->soldeSuffisant($compteSource, $montantTotalADebiter)) {
+            return ['success' => false, 'message' => 'Solde insuffisant pour effectuer tous les transferts.'];
+        }
+
+        // Vérifier que tous les destinataires existent et ne sont pas l'émetteur
+        $comptesDestinations = [];
+        foreach ($numerosDestinations as $numero) {
+            if ($numero === $numeroSource) {
+                return ['success' => false, 'message' => 'Impossible de transférer vers son propre numéro (' . $numero . ').'];
+            }
+
+            $compte = $this->getCompteParNumero($numero);
+            if (!$compte) {
+                return ['success' => false, 'message' => "Le numéro destinataire $numero n'existe pas."];
+            }
+
+            $comptesDestinations[] = $compte;
+        }
+
+        $this->db->transStart();
+
+        try {
+            $references = [];
+            $details = [];
+
+            // Débiter le compte source du montant total
+            $this->db->table('comptes')
+                ->where('client_id', $compteSource['client_id'])
+                ->set('solde', 'solde - ' . $montantTotalADebiter, false)
+                ->update();
+
+            foreach ($comptesDestinations as $i => $compteDest) {
+                // Créditer chaque destination
+                $this->db->table('comptes')
+                    ->where('client_id', $compteDest['client_id'])
+                    ->set('solde', 'solde + ' . $montantParPersonne, false)
+                    ->update();
+
+                $reference = $this->genererReference();
+
+                // Enregistrer l'opération
+                $this->insert([
+                    'reference'              => $reference,
+                    'type_operation_id'      => $this->typeOperationTransfert,
+                    'compte_source_id'       => $compteSource['id'],
+                    'compte_destination_id'  => $compteDest['id'],
+                    'montant'                => $montantParPersonne,
+                    'frais'                  => $fraisParTransfert,
+                    'montant_total'          => $montantTotalParTransfert,
+                    'bareme_frais_id'        => $bareme['id'],
+                    'statut'                 => $this->getStatutId('REUSSI'),
+                    'date_operation'         => date('Y-m-d H:i:s'),
+                ]);
+
+                $references[] = $reference;
+                $details[] = [
+                    'numero'     => $numerosDestinations[$i],
+                    'montant'    => $montantParPersonne,
+                    'frais'      => $fraisParTransfert,
+                    'reference'  => $reference,
+                ];
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new Exception('Échec de la transaction SQL.');
+            }
+
+            return [
+                'success'    => true,
+                'message'    => count($details) . ' transfert(s) effectué(s) avec succès.',
+                'details'    => $details,
+                'frais_total' => $fraisParTransfert * $totalRecipients,
+                'montant_par_personne' => $montantParPersonne,
+            ];
+        } catch (Exception $e) {
+            $this->db->transRollback();
+            return ['success' => false, 'message' => 'Erreur lors des transferts : ' . $e->getMessage()];
+        }
+    }
+
+
     public function getHistoriqueTransferts(int $clientId, int $limite = 20): array
     {
         return $this->db->table('operations o')
             ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
-                      cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination')
+                      cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination,
+                      st.libelle AS statut_libelle')
             ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
             ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id', 'left')
             ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
+            ->join('statut st', 'st.id = o.statut', 'left')
             ->where('o.type_operation_id', $this->typeOperationTransfert)
             ->groupStart()
                 ->where('cs.client_id', $clientId)
@@ -239,22 +357,183 @@ class Transfert extends Model
             ->getResultArray();
     }
 
-    // Historique global du client : transferts, retraits et dépôts
+
+    public function getStatsFrais(?string $dateDebut = null, ?string $dateFin = null): array
+    {
+        $statutReussi = $this->getStatutId('REUSSI');
+
+        $builderRetraits = $this->db->table('operations o')
+            ->select("
+                op.id AS operateur_id,
+                op.nom AS operateur_nom,
+                'RETRAIT' AS type_operation,
+                COUNT(o.id) AS nb_operations,
+                COALESCE(SUM(o.frais), 0) AS total_frais,
+                COALESCE(AVG(o.frais), 0) AS moyenne_frais,
+                COALESCE(SUM(o.montant), 0) AS total_montant
+            ")
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id')
+            ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id')
+            ->join('prefixes ps', 'ps.id = cls.prefixe_id')
+            ->join('operateurs op', 'op.id = ps.id_operateur')
+            ->where('o.type_operation_id', 2)   // RETRAIT
+            ->where('o.statut', $statutReussi);
+
+        if ($dateDebut) {
+            $builderRetraits->where('o.date_operation >=', $dateDebut);
+        }
+        if ($dateFin) {
+            $builderRetraits->where('o.date_operation <=', $dateFin);
+        }
+
+        $retraits = $builderRetraits
+            ->groupBy('op.id, op.nom')
+            ->orderBy('op.nom', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $builderTransferts = $this->db->table('operations o')
+            ->select("
+                op.id AS operateur_id,
+                op.nom AS operateur_nom,
+                CASE WHEN ps.id_operateur = pd.id_operateur THEN 'MEME_OPERATEUR' ELSE 'AUTRE_OPERATEUR' END AS type_operateur,
+                COUNT(o.id) AS nb_operations,
+                COALESCE(SUM(o.frais), 0) AS total_frais,
+                COALESCE(AVG(o.frais), 0) AS moyenne_frais,
+                COALESCE(SUM(o.montant), 0) AS total_montant
+            ")
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id')
+            ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id')
+            ->join('prefixes ps', 'ps.id = cls.prefixe_id')
+            ->join('operateurs op', 'op.id = ps.id_operateur')
+            ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id')
+            ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id')
+            ->join('prefixes pd', 'pd.id = cld.prefixe_id')
+            ->where('o.type_operation_id', 3)   // TRANSFERT
+            ->where('o.statut', $statutReussi);
+
+        if ($dateDebut) {
+            $builderTransferts->where('o.date_operation >=', $dateDebut);
+        }
+        if ($dateFin) {
+            $builderTransferts->where('o.date_operation <=', $dateFin);
+        }
+
+        $transferts = $builderTransferts
+            ->groupBy('op.id, op.nom, type_operateur')
+            ->orderBy('op.nom', 'ASC')
+            ->orderBy('type_operateur', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        // ---- 3. Fusionner les résultats par opérateur ----
+        $operateurs = [];
+
+        // Traiter les retraits
+        foreach ($retraits as $r) {
+            $opId = (int) $r['operateur_id'];
+            $operateurs[$opId] = [
+                'operateur_id'   => $opId,
+                'operateur_nom'  => $r['operateur_nom'],
+                'retrait_nb'      => (int) $r['nb_operations'],
+                'retrait_frais'   => (float) $r['total_frais'],
+                'retrait_moyenne' => (float) $r['moyenne_frais'],
+                'retrait_montant' => (float) $r['total_montant'],
+                'meme_nb'         => 0,
+                'meme_frais'      => 0.0,
+                'meme_moyenne'    => 0.0,
+                'meme_montant'    => 0.0,
+                'autre_nb'        => 0,
+                'autre_frais'     => 0.0,
+                'autre_moyenne'   => 0.0,
+                'autre_montant'   => 0.0,
+            ];
+        }
+
+        // Traiter les transferts
+        foreach ($transferts as $t) {
+            $opId = (int) $t['operateur_id'];
+            if (!isset($operateurs[$opId])) {
+                $operateurs[$opId] = [
+                    'operateur_id'   => $opId,
+                    'operateur_nom'  => $t['operateur_nom'],
+                    'retrait_nb'      => 0,
+                    'retrait_frais'   => 0.0,
+                    'retrait_moyenne' => 0.0,
+                    'retrait_montant' => 0.0,
+                    'meme_nb'         => 0,
+                    'meme_frais'      => 0.0,
+                    'meme_moyenne'    => 0.0,
+                    'meme_montant'    => 0.0,
+                    'autre_nb'        => 0,
+                    'autre_frais'     => 0.0,
+                    'autre_moyenne'   => 0.0,
+                    'autre_montant'   => 0.0,
+                ];
+            }
+
+            $isMeme = ($t['type_operateur'] ?? '') === 'MEME_OPERATEUR';
+            $key = $isMeme ? 'meme' : 'autre';
+            $operateurs[$opId]["{$key}_nb"]      = (int) $t['nb_operations'];
+            $operateurs[$opId]["{$key}_frais"]   = (float) $t['total_frais'];
+            $operateurs[$opId]["{$key}_moyenne"] = (float) $t['moyenne_frais'];
+            $operateurs[$opId]["{$key}_montant"] = (float) $t['total_montant'];
+        }
+
+        // ---- 4. Calculer les totaux généraux ----
+        $totalFrais     = 0.0;
+        $totalOperations = 0;
+        $totalMontant   = 0.0;
+
+        foreach ($operateurs as &$op) {
+            $op['total_frais'] = $op['retrait_frais'] + $op['meme_frais'] + $op['autre_frais'];
+            $op['total_operations'] = $op['retrait_nb'] + $op['meme_nb'] + $op['autre_nb'];
+            $op['total_montant'] = $op['retrait_montant'] + $op['meme_montant'] + $op['autre_montant'];
+            $totalFrais      += $op['total_frais'];
+            $totalOperations += $op['total_operations'];
+            $totalMontant    += $op['total_montant'];
+        }
+        unset($op);
+
+        return [
+            'operateurs'      => array_values($operateurs),
+            'total_frais'     => $totalFrais,
+            'total_operations'=> $totalOperations,
+            'total_montant'   => $totalMontant,
+            'date_debut'      => $dateDebut,
+            'date_fin'        => $dateFin,
+        ];
+    }
+
     public function getHistoriqueGlobal(int $clientId, int $limite = 20): array
     {
+        // Récupérer le ou les comptes du client
+        $comptesClient = $this->db->table('comptes')
+            ->where('client_id', $clientId)
+            ->get()
+            ->getResultArray();
+
+        $compteIds = array_map(function($c) {
+            return (int) ($c['id'] ?? $c['rowid']);
+        }, $comptesClient);
+
+        if (empty($compteIds)) {
+            return [];
+        }
+
         return $this->db->table('operations o')
             ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
                       cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination,
-                      top.libelle AS type_operation_libelle, top.code AS type_operation_code')
+                      top.libelle AS type_operation_libelle, top.code AS type_operation_code,
+                      st.libelle AS statut_libelle')
             ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
             ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id', 'left')
             ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
             ->join('types_operations top', 'COALESCE(top.id, top.rowid) = o.type_operation_id', 'left')
-            ->groupStart()
-                ->where('cs.client_id', $clientId)
-                ->orWhere('cd.client_id', $clientId)
-            ->groupEnd()
+            ->join('statut st', 'st.id = o.statut', 'left')
+            ->whereIn('o.compte_source_id', $compteIds, false)
+            ->orWhereIn('o.compte_destination_id', $compteIds, false)
             ->orderBy('o.date_operation', 'DESC')
             ->limit($limite)
             ->get()

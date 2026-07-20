@@ -1,29 +1,53 @@
+-- ============================================================
+-- OPERATEURS
+-- ============================================================
 
+INSERT INTO operateurs (nom) VALUES
+('MVOLA'),
+('ORANGE MONEY'),
+('AIRTEL MONEY');
 
--- Préfixes
-INSERT INTO prefixes (prefixe, actif) VALUES
-('033', 1),
-('037', 1);
+-- ============================================================
+-- PREFIXES
+-- ============================================================
 
--- Types d'opérations
-INSERT INTO types_operations (code, libelle, actif) VALUES
-('DEPOT', 'Dépôt', 1),
-('RETRAIT', 'Retrait', 1),
-('TRANSFERT', 'Transfert', 1);
+INSERT INTO prefixes (prefixe,id_operateur,actif) VALUES
+('034',1,1),
+('038',1,1),
+('032',2,1),
+('037',2,1),
+('033',3,1);
 
--- Statuts
-INSERT INTO statut (libelle) VALUES
+-- ============================================================
+-- TYPES D'OPERATIONS
+-- ============================================================
+
+INSERT INTO types_operations (code,libelle,actif) VALUES
+('DEPOT','Dépôt',1),
+('RETRAIT','Retrait',1),
+('TRANSFERT','Transfert',1);
+
+-- ============================================================
+-- STATUT
+-- ============================================================
+
+INSERT INTO statut(libelle) VALUES
 ('REUSSI'),
 ('ECHEC');
 
+-- ============================================================
+-- BAREMES DES DEPOTS
+-- ============================================================
 
--- DEPOT
 INSERT INTO baremes_frais
-(type_operation_id, montant_min, montant_max, frais_fixe)
+(type_operation_id,montant_min,montant_max,frais_fixe)
 VALUES
 (1,0,999999999,0);
 
--- RETRAIT
+-- ============================================================
+-- BAREMES DES RETRAITS
+-- ============================================================
+
 INSERT INTO baremes_frais
 (type_operation_id,montant_min,montant_max,frais_fixe)
 VALUES
@@ -38,7 +62,10 @@ VALUES
 (2,500001,1000000,2500),
 (2,1000001,2000000,3000);
 
--- TRANSFERT (exemple)
+-- ============================================================
+-- BAREMES DES TRANSFERTS
+-- ============================================================
+
 INSERT INTO baremes_frais
 (type_operation_id,montant_min,montant_max,frais_fixe)
 VALUES
@@ -48,26 +75,65 @@ VALUES
 (3,100001,999999999,2000);
 
 -- ============================================================
+-- COMMISSIONS PAR OPERATEUR
+-- ============================================================
+
+INSERT INTO configurations_commissions
+(operateur_id,type_operation_id,autre_operateur,commission_pourcentage)
+VALUES
+(1,3,1,2.50),
+(2,3,1,3.00),
+(3,3,1,1.75);
+
+-- ============================================================
 -- CLIENTS
 -- ============================================================
 
 INSERT INTO client
 (numero_telephone,nom,role,prefixe_id)
 VALUES
-('0331234567','Administrateur','ADMIN',1),
-('0331111111','Jean', 'CLIENT',1),
-('0332222222','Paul', 'CLIENT',1),
-('0373333333','Marie','CLIENT',2),
-('0374444444','Luc',  'CLIENT',2);
+('0340000001','Administrateur','ADMIN',1),
+('0341234567','Jean','CLIENT',1),
+('0381111111','Paul','CLIENT',2),
+('0322222222','Marie','CLIENT',3),
+('0373333333','Luc','CLIENT',4),
+('0334444444','Alice','CLIENT',5),
+('0345555555','Bob','CLIENT',1),
+('0326666666','Sarah','CLIENT',3),
+('0377777777','Michel','CLIENT',4),
+('0338888888','Emma','CLIENT',5);
 
 -- ============================================================
 -- COMPTES
 -- ============================================================
 
-INSERT INTO comptes (client_id,solde)
+INSERT INTO comptes(client_id,solde)
 VALUES
 (1,0),
 (2,500000),
-(3,120000),
-(4,75000),
-(5,20000);
+(3,250000),
+(4,800000),
+(5,120000),
+(6,50000),
+(7,300000),
+(8,150000),
+(9,75000),
+(10,450000);
+
+-- ============================================================
+-- OPERATIONS DE TEST
+-- ============================================================
+
+INSERT INTO operations
+(reference,type_operation_id,compte_source_id,compte_destination_id,montant,frais,montant_total,bareme_frais_id,frais_inclus,statut)
+VALUES
+('OP000001',1,NULL,2,100000,0,100000,1,0,1),
+('OP000002',2,2,NULL,20000,200,20200,5,0,1),
+('OP000003',3,2,4,50000,500,50500,13,0,1),
+('OP000004',3,3,5,100000,1000,101000,14,1,1),
+('OP000005',2,4,NULL,300000,1500,301500,8,0,1),
+('OP000006',1,NULL,6,50000,0,50000,1,0,1),
+('OP000007',3,7,8,15000,500,15500,12,0,1),
+('OP000008',2,8,NULL,5000,50,5050,3,0,1),
+('OP000009',3,9,10,80000,1000,81000,13,1,1),
+('OP000010',1,NULL,3,250000,0,250000,1,0,1);

@@ -210,8 +210,9 @@ class Retrait extends Model
     public function getHistoriqueRetraits(int $clientId, int $limite = 20): array
     {
         return $this->db->table('operations o')
-            ->select('o.*, cs.client_id AS source_client, o.statut AS statut_libelle')
+            ->select('o.*, cs.client_id AS source_client, st.libelle AS statut_libelle')
             ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
+            ->join('statut st', 'st.id = o.statut', 'left')
             ->where('o.type_operation_id', $this->typeOperationRetrait)
             ->where('cs.client_id', $clientId)
             ->orderBy('o.date_operation', 'DESC')

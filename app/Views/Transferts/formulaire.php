@@ -271,6 +271,12 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                 <div class="flash error"><?= esc(session()->getFlashdata('error')) ?></div>
             <?php endif; ?>
 
+            <div style="text-align: right; margin-bottom: 14px;">
+                <a href="<?= site_url('transfert/multiple') ?>" style="font-size: 13px; color: var(--gold-dark); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-weight: 600;">
+                    Envoi groupé →
+                </a>
+            </div>
+
             <form action="<?= site_url('transfert') ?>" method="post">
                 <?= csrf_field() ?>
 
