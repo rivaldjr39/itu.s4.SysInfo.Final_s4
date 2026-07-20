@@ -28,6 +28,27 @@ class Transfert extends Model
 
     // ID du type d'opération "TRANSFERT" dans la table types_operations
     protected int $typeOperationTransfert = 3;
+    protected array $statutCache = [];
+
+    protected function getStatutId(string $libelle): int
+    {
+        if (isset($this->statutCache[$libelle])) {
+            return $this->statutCache[$libelle];
+        }
+
+        $statut = $this->db->table('statut')
+            ->where('libelle', $libelle)
+            ->get()
+            ->getRowArray();
+
+        if (!$statut) {
+            throw new Exception("Le statut '$libelle' n'existe pas dans la table statut.");
+        }
+
+        $this->statutCache[$libelle] = (int) $statut['id'];
+
+        return $this->statutCache[$libelle];
+    }
 
     // ------------------------------------------------------------
     // 1. Récupérer le barème de frais applicable à un montant donné
@@ -173,7 +194,7 @@ class Transfert extends Model
                 'frais'                  => $frais,
                 'montant_total'          => $montantTotal,
                 'bareme_frais_id'        => $bareme['id'],
-                'statut'                 => 'REUSSI',
+                'statut'                 => $this->getStatutId('REUSSI'),
                 'date_operation'         => date('Y-m-d H:i:s'),
             ]);
 
@@ -231,8 +252,8 @@ class Transfert extends Model
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
             ->join('types_operations top', 'COALESCE(top.id, top.rowid) = o.type_operation_id', 'left')
             ->groupStart()
-                ->where("o.compte_source_id IN (SELECT id FROM comptes WHERE client_id = {$clientId})", null, false)
-                ->orWhere("o.compte_destination_id IN (SELECT id FROM comptes WHERE client_id = {$clientId})", null, false)
+                ->where('cs.client_id', $clientId)
+                ->orWhere('cd.client_id', $clientId)
             ->groupEnd()
             ->orderBy('o.date_operation', 'DESC')
             ->limit($limite)

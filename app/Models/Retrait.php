@@ -27,6 +27,27 @@ class Retrait extends Model
 
     // ID du type d'opération "RETRAIT" dans la table types_operations
     protected int $typeOperationRetrait = 2;
+    protected array $statutCache = [];
+
+    protected function getStatutId(string $libelle): int
+    {
+        if (isset($this->statutCache[$libelle])) {
+            return $this->statutCache[$libelle];
+        }
+
+        $statut = $this->db->table('statut')
+            ->where('libelle', $libelle)
+            ->get()
+            ->getRowArray();
+
+        if (!$statut) {
+            throw new Exception("Le statut '$libelle' n'existe pas dans la table statut.");
+        }
+
+        $this->statutCache[$libelle] = (int) $statut['id'];
+
+        return $this->statutCache[$libelle];
+    }
 
     // ------------------------------------------------------------
     // 1. Récupérer le barème de frais applicable à un montant donné
@@ -152,7 +173,6 @@ class Retrait extends Model
                 ->update();
 
             // Enregistrement de l'opération : pas de compte_destination_id (retrait = sortie du système)
-            // statut est enregistré en texte brut pour être cohérent avec le module transfert
             $this->insert([
                 'reference'              => $reference,
                 'type_operation_id'      => $this->typeOperationRetrait,
@@ -162,7 +182,7 @@ class Retrait extends Model
                 'frais'                  => $frais,
                 'montant_total'          => $montantTotal,
                 'bareme_frais_id'        => $bareme['id'],
-                'statut'                 => 'REUSSI',
+                'statut'                 => $this->getStatutId('REUSSI'),
                 'date_operation'         => date('Y-m-d H:i:s'),
             ]);
 
