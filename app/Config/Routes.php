@@ -20,3 +20,12 @@ $routes->group('transfert', function ($routes) {
 });
 $routes->post('api/transfert', 'TransfertController::transfererApi');
 $routes->get('transfert/calculer-frais', 'TransfertController::calculerFraisApi');
+
+$routes->group('admin/baremes', function ($routes) {
+    $routes->get('/', 'BaremeController::index');
+    $routes->get('create', 'BaremeController::create');
+    $routes->post('store', 'BaremeController::store');
+    $routes->get('edit/(:num)', 'BaremeController::edit/$1');
+    $routes->post('update/(:num)', 'BaremeController::update/$1');
+    $routes->get('delete/(:num)', 'BaremeController::delete/$1');
+});

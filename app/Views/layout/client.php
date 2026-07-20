@@ -158,6 +158,10 @@
                     <a href="<?= site_url('dashboard') ?>">Dashboard</a>
                     <a href="<?= site_url('transfert') ?>">Transfert</a>
                     <a href="<?= site_url('transfert/historique') ?>">Historique</a>
+                    <a href="<?= site_url('retrait') ?>">Retrait</a>
+                    <?php if (session()->get('client_role') === 'ADMIN'): ?>
+                        <a href="<?= site_url('admin/baremes') ?>">Barèmes Frais</a>
+                    <?php endif; ?>
                     <a class="is-primary" href="<?= site_url('logout') ?>">Déconnexion</a>
                 </nav>
             </header>
