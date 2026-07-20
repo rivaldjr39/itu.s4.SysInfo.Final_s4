@@ -157,6 +157,7 @@
                 <nav class="client-nav" aria-label="Navigation client">
                     <a href="<?= site_url('dashboard') ?>">Dashboard</a>
                     <a href="<?= site_url('transfert') ?>">Transfert</a>
+                    <a href="<?= site_url('depot') ?>">Depot</a>
                     <a href="<?= site_url('transfert/historique') ?>">Historique</a>
                     <a href="<?= site_url('retrait') ?>">Retrait</a>
                     <?php if (session()->get('client_role') === 'ADMIN'): ?>

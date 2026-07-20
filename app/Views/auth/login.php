@@ -250,33 +250,7 @@
 </head>
 <body>
     <main class="login-shell">
-        <section class="hero">
-            <p class="eyebrow">Opérateur mobile money</p>
-            <h1>Connexion client par numéro de téléphone</h1>
-            <p>
-                Aucun compte à créer. Saisissez simplement le numéro déjà présent dans la base
-                pour accéder au dépôt, au retrait, au transfert et à l’historique.
-            </p>
-
-            <div class="feature-list">
-                <div class="feature">
-                    <strong>Login automatique</strong>
-                    <span>Le sujet demande une connexion directe avec le numéro de téléphone.</span>
-                </div>
-                <div class="feature">
-                    <strong>Session partagée</strong>
-                    <span>Le numéro est stocké en session pour alimenter le module transfert existant.</span>
-                </div>
-                <div class="feature">
-                    <strong>Flux simple</strong>
-                    <span>Pas de mot de passe, pas d’inscription préalable, pas d’étapes inutiles.</span>
-                </div>
-                <div class="feature">
-                    <strong>Base existante</strong>
-                    <span>Le login se branche sur les tables client/clients déjà présentes dans le projet.</span>
-                </div>
-            </div>
-        </section>
+        
 
         <section class="panel">
             <div class="panel-top">
@@ -303,7 +277,7 @@
                             id="numero_telephone"
                             name="numero_telephone"
                             placeholder="0331234567"
-                            value="0331234567"
+                            value="0330000001"
                             value="<?= esc(old('numero_telephone') ?? '') ?>"
                             inputmode="numeric"
                             autocomplete="tel"
@@ -311,17 +285,10 @@
                         >
                         <div class="hint">Format attendu: 10 à 15 chiffres, sans espace ni séparateur.</div>
                     </div>
-
                     <div class="actions">
                         <button type="submit" class="primary">Accéder à mon espace</button>
-                        <a class="secondary" href="<?= site_url('transfert') ?>">Aller au transfert</a>
                     </div>
                 </form>
-
-                <div class="footer-note">
-                    Cette page est alignée sur le sujet: connexion automatique avec numéro de téléphone,
-                    sans inscription préalable.
-                </div>
             </div>
         </section>
     </main>

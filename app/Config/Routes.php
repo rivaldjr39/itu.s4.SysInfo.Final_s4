@@ -36,3 +36,10 @@ $routes->group('admin/baremes', function ($routes) {
     $routes->post('update/(:num)', 'BaremeController::update/$1');
     $routes->get('delete/(:num)', 'BaremeController::delete/$1');
 });
+
+
+$routes->group('depot', function ($routes) {
+    $routes->get('/', 'DepotController::index');
+    $routes->post('/', 'DepotController::deposer');
+    $routes->get('calculer-frais', 'DepotController::calculerFraisApi');
+});

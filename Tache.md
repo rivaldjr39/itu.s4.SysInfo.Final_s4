@@ -33,7 +33,16 @@
     
 ## Retrait : Tommy
 - Function (php)
-    -  
+    - [ok] effectuerRetrait()
+    - [ok] getBaremeFrais
+    - [ok] getSolde
+    - [ok] calculFrais
+    - [ok] getCompteParNumero
+    - [ok] getHistorique
+- Page
+    - [ok] Retrait
+    - [ok] Formulaire de retrait
+    - [ok] Historique
 
 
 ## Login

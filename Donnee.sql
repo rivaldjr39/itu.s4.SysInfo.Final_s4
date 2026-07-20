@@ -23,27 +23,10 @@ INSERT INTO comptes (client_id, solde) VALUES
 (1, 100000),
 (2, 50000);
 
+INSERT INTO statut (libelle) VALUES
+('REUSSIE'),
+('ECHEC');
 
-/*
--- ============================================================
--- VUES UTILES POUR LE CÔTÉ OPÉRATEUR
--- ============================================================
-
--- Situation des gains (frais perçus sur retrait/transfert)
-CREATE VIEW vue_gains_operateur AS
-SELECT
-    t.libelle           AS type_operation,
-    DATE(o.date_operation) AS jour,
-    SUM(o.frais)         AS total_frais,
-    COUNT(*)             AS nombre_operations
-FROM operations o
-JOIN types_operations t ON t.id = o.type_operation_id
-WHERE o.statut = 'REUSSI' AND t.code IN ('RETRAIT', 'TRANSFERT')
-GROUP BY t.libelle, DATE(o.date_operation);
-
-
-*/
--- Situation des comptes clients
 CREATE VIEW vue_situation_comptes AS
 SELECT
     cl.numero_telephone,
