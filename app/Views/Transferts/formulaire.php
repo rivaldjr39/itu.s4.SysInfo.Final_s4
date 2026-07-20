@@ -419,8 +419,9 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
 
                     fraisInfo.innerHTML = message;
                 })
-                .catch(() => {
-                    fraisInfo.textContent = 'Impossible de calculer les frais.';
+                .catch((err) => {
+                    console.error('Erreur calcul frais:', err);
+                    fraisInfo.textContent = 'Erreur lors du calcul des frais. Veuillez vous reconnecter.';
                 });
         }, 350);
     }

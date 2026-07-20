@@ -17,16 +17,14 @@ INSERT INTO operateurs (id, nom, notre_operateur) VALUES (3, 'Airtel Money', 0);
 
 -- MVola (opérateur 1) - NOTRE opérateur
 INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (1, '038', 1);
-INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (2, '039', 1);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (2, '034', 1);
 
 -- Orange Money (opérateur 2)
 INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (3, '032', 2);
-INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (4, '033', 2);
-INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (5, '034', 2);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (4, '037', 2);
 
 -- Airtel Money (opérateur 3)
-INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (6, '031', 3);
-INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (7, '037', 3);
+INSERT INTO prefixes (id, prefixe, id_operateur) VALUES (7, '033', 3);
 
 -- ============================================================
 -- 3. TYPES D'OPÉRATIONS
@@ -52,17 +50,10 @@ INSERT INTO client (id, numero_telephone, nom, role, prefixe_id)
 VALUES (1, '0381234567', 'Jean Rakoto', 'CLIENT', 1);
 
 INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
-VALUES (2, '0399876543', 'Marie Andria', 'CLIENT', 2);
-
-INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
 VALUES (5, '0380000001', 'Admin System', 'ADMIN', 1);
 
--- Clients d'autres opérateurs (peuvent se connecter mais pas de frais de barème)
--- Client Orange Money
 INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
 VALUES (3, '0327654321', 'Pierre Ben', 'CLIENT', 3);
-
--- Client Airtel Money
 INSERT INTO client (id, numero_telephone, nom, role, prefixe_id) 
 VALUES (4, '0312345678', 'Sophie Lal', 'CLIENT', 6);
 

@@ -198,20 +198,34 @@ class TransfertController extends BaseController
             ])->setStatusCode(422);
         }
 
-        $bareme = $this->transfertModel->getBaremeFrais($montant);
-
-        if (!$bareme) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Aucun barème de frais pour ce montant.',
-            ])->setStatusCode(404);
+        // Récupérer l'opérateur source pour vérifier si c'est notre opérateur
+        $compteSource = null;
+        $operateurSourceId = null;
+        
+        if ($numeroSource) {
+            $compteSource = $this->transfertModel->getCompteParNumero($numeroSource);
+            if ($compteSource) {
+                $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
+            }
         }
 
+        // Si pas de compte source connecté, retourner une erreur
+        if (!$compteSource) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Veuillez vous connecter pour calculer les frais.',
+            ])->setStatusCode(401);
+        }
+
+        // Récupérer le barème de frais (seulement pour notre opérateur)
+        $bareme = $this->transfertModel->getBaremeFrais($montant, $operateurSourceId);
+
+        // Initialiser les frais par défaut
         $fraisDetails = [
             'inter_operateur' => false,
-            'frais_base' => $this->transfertModel->calculerFrais($bareme, $montant),
+            'frais_base' => 0.0,
             'commission_supplementaire' => 0.0,
-            'frais_total' => $this->transfertModel->calculerFrais($bareme, $montant),
+            'frais_total' => 0.0,
             'frais_retrait' => 0.0,
         ];
 
@@ -223,7 +237,6 @@ class TransfertController extends BaseController
                 ])->setStatusCode(422);
             }
 
-            $compteSource = $this->transfertModel->getCompteParNumero($numeroSource);
             $compteDestination = $this->transfertModel->getCompteParNumero($numeroDestination);
 
             if (!$compteSource || !$compteDestination) {
@@ -233,20 +246,50 @@ class TransfertController extends BaseController
                 ])->setStatusCode(404);
             }
 
-            $fraisDetails = $this->transfertModel->calculerFraisTransfert(
-                $bareme,
-                $montant,
-                (int) ($compteSource['operateur_id'] ?? 0),
-                (int) ($compteDestination['operateur_id'] ?? 0)
-            );
+            $operateurDestinationId = (int) ($compteDestination['operateur_id'] ?? 0);
+            $estInterOperateur = $operateurSourceId !== $operateurDestinationId;
 
-            // Calculer les frais de retrait si l'option est activée
-            if ($inclureFraisRetrait) {
-                $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
+            // Si c'est notre opérateur, calculer les frais normaux
+            if ($bareme) {
+                $fraisDetails = $this->transfertModel->calculerFraisTransfert(
+                    $bareme,
+                    $montant,
+                    $operateurSourceId,
+                    $operateurDestinationId
+                );
+            } else {
+                // Si ce n'est pas notre opérateur, seulement la commission inter-opérateur
+                $fraisDetails['inter_operateur'] = $estInterOperateur;
+                if ($estInterOperateur) {
+                    $commission = round(
+                        $montant * $this->transfertModel->getCommissionInterOperateur($operateurDestinationId) / 100,
+                        2
+                    );
+                    $fraisDetails['commission_supplementaire'] = $commission;
+                    $fraisDetails['frais_total'] = $commission;
+                }
+            }
+
+            // Calculer les frais de retrait si l'option est activée et si c'est notre opérateur
+            if ($inclureFraisRetrait && $bareme) {
                 $fraisRetrait = $this->transfertModel->calculerFraisRetrait($montant, $operateurSourceId);
                 $fraisDetails['frais_retrait'] = $fraisRetrait;
                 $fraisDetails['frais_total'] += $fraisRetrait;
             }
+        } elseif ($bareme) {
+            // Pas de destination, juste calculer les frais de base
+            $fraisDetails['frais_base'] = $this->transfertModel->calculerFrais($bareme, $montant);
+            $fraisDetails['frais_total'] = $fraisDetails['frais_base'];
+        } else {
+            // Pas de barème (autre opérateur) et pas de destination
+            // Retourner les frais à 0 mais avec succès
+            $fraisDetails = [
+                'inter_operateur' => false,
+                'frais_base' => 0.0,
+                'commission_supplementaire' => 0.0,
+                'frais_total' => 0.0,
+                'frais_retrait' => 0.0,
+            ];
         }
 
         return $this->response->setJSON([
