@@ -49,7 +49,7 @@ CREATE TABLE comptes (
     client_id       INT NOT NULL UNIQUE,
     solde           DECIMAL(15,2) DEFAULT 0,
     date_creation   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (client_id) REFERENCES clients(id)
+    FOREIGN KEY (client_id) REFERENCES client(id)
 );
 
 

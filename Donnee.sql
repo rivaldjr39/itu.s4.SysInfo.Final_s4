@@ -7,10 +7,10 @@ INSERT INTO types_operations (code, libelle) VALUES
 
 -- Exemple de barème par tranche pour le retrait (id type_operation = 2)
 INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage) VALUES
-(2, 0,      5000,    200,  0),
-(2, 5001,   20000,   500,  0),
-(2, 20001,  100000,  0,    2.0),
-(2, 100001, 999999999, 0,  1.5);
+(3, 0,      5000,    200,  0),
+(3, 5001,   20000,   500,  0),
+(3, 20001,  100000,  0,    2.0),
+(3, 100001, 999999999, 0,  1.5);
 
 
 INSERT INTO client (numero_telephone, nom, Role, prefixe_id
@@ -19,6 +19,12 @@ INSERT INTO client (numero_telephone, nom, Role, prefixe_id
 ('0379876543', 'Bob', 'CLIENT', 2),
 ('0330000001', 'Charlie', 'ADMIN', 1);
 
+INSERT INTO comptes (client_id, solde) VALUES
+(1, 100000),
+(2, 50000);
+
+
+/*
 -- ============================================================
 -- VUES UTILES POUR LE CÔTÉ OPÉRATEUR
 -- ============================================================
@@ -36,7 +42,7 @@ WHERE o.statut = 'REUSSI' AND t.code IN ('RETRAIT', 'TRANSFERT')
 GROUP BY t.libelle, DATE(o.date_operation);
 
 
-
+*/
 -- Situation des comptes clients
 CREATE VIEW vue_situation_comptes AS
 SELECT
@@ -46,4 +52,4 @@ SELECT
     (SELECT COUNT(*) FROM operations o
      WHERE o.compte_source_id = c.id OR o.compte_destination_id = c.id) AS nombre_operations
 FROM comptes c
-JOIN clients cl ON cl.id = c.client_id;
+JOIN client cl ON cl.id = c.client_id;

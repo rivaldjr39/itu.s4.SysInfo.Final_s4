@@ -26,7 +26,7 @@ class TransfertController extends BaseController
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        return view('client/transfert_form', [
+        return view('Transferts/formulaire', [
             'numero_client' => $numeroClient,
         ]);
     }
@@ -78,24 +78,35 @@ class TransfertController extends BaseController
     public function historique()
     {
         $numeroClient = session()->get('numero_telephone');
+        $clientId = session()->get('client_id');
 
         if (!$numeroClient) {
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        // Récupérer le client + son compte pour avoir client_id
-        $clientModel = new \App\Models\Client();
-        $client = $clientModel->where('numero_telephone', $numeroClient)->first();
+        if (!$clientId) {
+            // Récupérer le client + son compte pour avoir client_id
+            $clientModel = new \App\Models\Client();
+            $client = $clientModel->findByNumeroTelephone($numeroClient);
 
-        if (!$client) {
-            return redirect()->to('/login')->with('error', 'Client introuvable.');
+            if (!$client) {
+                return redirect()->to('/login')->with('error', 'Client introuvable.');
+            }
+
+            $clientId = (int) $client['id'];
         }
 
-        $historique = $this->transfertModel->getHistoriqueTransferts($client['id']);
+        if (!is_int($clientId) && !ctype_digit((string) $clientId)) {
+            return redirect()->to('/login')->with('error', 'Session client invalide.');
+        }
 
-        return view('client/transfert_historique', [
+        $clientId = (int) $clientId;
+
+        $historique = $this->transfertModel->getHistoriqueTransferts($clientId);
+
+        return view('Transferts/transfert', [
             'historique'     => $historique,
-            'client_id'      => $client['id'],
+            'client_id'      => $clientId,
             'numero_client'  => $numeroClient,
         ]);
     }
