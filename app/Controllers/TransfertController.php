@@ -259,6 +259,33 @@ class TransfertController extends BaseController
     }
 
     // ------------------------------------------------------------
+    // Situation des gains via les frais (retrait + transfert)
+    // Accessible uniquement aux administrateurs
+    // ------------------------------------------------------------
+    public function gainsFrais()
+    {
+        $role = session()->get('client_role');
+        if (!$role || $role !== 'ADMIN') {
+            return redirect()->to('/dashboard')->with('error', 'Accès réservé aux administrateurs.');
+        }
+
+        $dateDebut = $this->request->getGet('date_debut');
+        $dateFin   = $this->request->getGet('date_fin');
+
+        $stats = $this->transfertModel->getStatsFrais(
+            !empty($dateDebut) ? $dateDebut : null,
+            !empty($dateFin)   ? $dateFin   : null
+        );
+
+        return view('admin/gains_frais', [
+            'stats'          => $stats,
+            'title'          => 'Situation des gains — Frais perçus',
+            'date_debut'     => $dateDebut,
+            'date_fin'       => $dateFin,
+        ]);
+    }
+
+    // ------------------------------------------------------------
     // Version API (JSON) — utile si le front est en AJAX/SPA
     // ------------------------------------------------------------
     public function transfererApi()

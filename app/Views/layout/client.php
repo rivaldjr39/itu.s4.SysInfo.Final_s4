@@ -162,6 +162,9 @@
                     <a href="<?= site_url('retrait') ?>">Retrait</a>
                     <?php if (session()->get('client_role') === 'ADMIN'): ?>
                         <a href="<?= site_url('admin/baremes') ?>">Barèmes Frais</a>
+                        <a href="<?= site_url('admin/commissions') ?>">Commissions</a>
+                        <a href="<?= site_url('admin/prefixes') ?>">Préfixes</a>
+                        <a href="<?= site_url('admin/gains-frais') ?>">Gains Frais</a>
                     <?php endif; ?>
                     <a class="is-primary" href="<?= site_url('logout') ?>">Déconnexion</a>
                 </nav>

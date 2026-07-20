@@ -334,9 +334,7 @@ class Transfert extends Model
         }
     }
 
-    // ------------------------------------------------------------
-    // 7. Historique des transferts d'un client (émis + reçus)
-    // ------------------------------------------------------------
+
     public function getHistoriqueTransferts(int $clientId, int $limite = 20): array
     {
         return $this->db->table('operations o')
@@ -359,7 +357,154 @@ class Transfert extends Model
             ->getResultArray();
     }
 
-    // Historique global du client : transferts, retraits et dépôts
+
+    public function getStatsFrais(?string $dateDebut = null, ?string $dateFin = null): array
+    {
+        $statutReussi = $this->getStatutId('REUSSI');
+
+        $builderRetraits = $this->db->table('operations o')
+            ->select("
+                op.id AS operateur_id,
+                op.nom AS operateur_nom,
+                'RETRAIT' AS type_operation,
+                COUNT(o.id) AS nb_operations,
+                COALESCE(SUM(o.frais), 0) AS total_frais,
+                COALESCE(AVG(o.frais), 0) AS moyenne_frais,
+                COALESCE(SUM(o.montant), 0) AS total_montant
+            ")
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id')
+            ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id')
+            ->join('prefixes ps', 'ps.id = cls.prefixe_id')
+            ->join('operateurs op', 'op.id = ps.id_operateur')
+            ->where('o.type_operation_id', 2)   // RETRAIT
+            ->where('o.statut', $statutReussi);
+
+        if ($dateDebut) {
+            $builderRetraits->where('o.date_operation >=', $dateDebut);
+        }
+        if ($dateFin) {
+            $builderRetraits->where('o.date_operation <=', $dateFin);
+        }
+
+        $retraits = $builderRetraits
+            ->groupBy('op.id, op.nom')
+            ->orderBy('op.nom', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $builderTransferts = $this->db->table('operations o')
+            ->select("
+                op.id AS operateur_id,
+                op.nom AS operateur_nom,
+                CASE WHEN ps.id_operateur = pd.id_operateur THEN 'MEME_OPERATEUR' ELSE 'AUTRE_OPERATEUR' END AS type_operateur,
+                COUNT(o.id) AS nb_operations,
+                COALESCE(SUM(o.frais), 0) AS total_frais,
+                COALESCE(AVG(o.frais), 0) AS moyenne_frais,
+                COALESCE(SUM(o.montant), 0) AS total_montant
+            ")
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id')
+            ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id')
+            ->join('prefixes ps', 'ps.id = cls.prefixe_id')
+            ->join('operateurs op', 'op.id = ps.id_operateur')
+            ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id')
+            ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id')
+            ->join('prefixes pd', 'pd.id = cld.prefixe_id')
+            ->where('o.type_operation_id', 3)   // TRANSFERT
+            ->where('o.statut', $statutReussi);
+
+        if ($dateDebut) {
+            $builderTransferts->where('o.date_operation >=', $dateDebut);
+        }
+        if ($dateFin) {
+            $builderTransferts->where('o.date_operation <=', $dateFin);
+        }
+
+        $transferts = $builderTransferts
+            ->groupBy('op.id, op.nom, type_operateur')
+            ->orderBy('op.nom', 'ASC')
+            ->orderBy('type_operateur', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        // ---- 3. Fusionner les résultats par opérateur ----
+        $operateurs = [];
+
+        // Traiter les retraits
+        foreach ($retraits as $r) {
+            $opId = (int) $r['operateur_id'];
+            $operateurs[$opId] = [
+                'operateur_id'   => $opId,
+                'operateur_nom'  => $r['operateur_nom'],
+                'retrait_nb'      => (int) $r['nb_operations'],
+                'retrait_frais'   => (float) $r['total_frais'],
+                'retrait_moyenne' => (float) $r['moyenne_frais'],
+                'retrait_montant' => (float) $r['total_montant'],
+                'meme_nb'         => 0,
+                'meme_frais'      => 0.0,
+                'meme_moyenne'    => 0.0,
+                'meme_montant'    => 0.0,
+                'autre_nb'        => 0,
+                'autre_frais'     => 0.0,
+                'autre_moyenne'   => 0.0,
+                'autre_montant'   => 0.0,
+            ];
+        }
+
+        // Traiter les transferts
+        foreach ($transferts as $t) {
+            $opId = (int) $t['operateur_id'];
+            if (!isset($operateurs[$opId])) {
+                $operateurs[$opId] = [
+                    'operateur_id'   => $opId,
+                    'operateur_nom'  => $t['operateur_nom'],
+                    'retrait_nb'      => 0,
+                    'retrait_frais'   => 0.0,
+                    'retrait_moyenne' => 0.0,
+                    'retrait_montant' => 0.0,
+                    'meme_nb'         => 0,
+                    'meme_frais'      => 0.0,
+                    'meme_moyenne'    => 0.0,
+                    'meme_montant'    => 0.0,
+                    'autre_nb'        => 0,
+                    'autre_frais'     => 0.0,
+                    'autre_moyenne'   => 0.0,
+                    'autre_montant'   => 0.0,
+                ];
+            }
+
+            $isMeme = ($t['type_operateur'] ?? '') === 'MEME_OPERATEUR';
+            $key = $isMeme ? 'meme' : 'autre';
+            $operateurs[$opId]["{$key}_nb"]      = (int) $t['nb_operations'];
+            $operateurs[$opId]["{$key}_frais"]   = (float) $t['total_frais'];
+            $operateurs[$opId]["{$key}_moyenne"] = (float) $t['moyenne_frais'];
+            $operateurs[$opId]["{$key}_montant"] = (float) $t['total_montant'];
+        }
+
+        // ---- 4. Calculer les totaux généraux ----
+        $totalFrais     = 0.0;
+        $totalOperations = 0;
+        $totalMontant   = 0.0;
+
+        foreach ($operateurs as &$op) {
+            $op['total_frais'] = $op['retrait_frais'] + $op['meme_frais'] + $op['autre_frais'];
+            $op['total_operations'] = $op['retrait_nb'] + $op['meme_nb'] + $op['autre_nb'];
+            $op['total_montant'] = $op['retrait_montant'] + $op['meme_montant'] + $op['autre_montant'];
+            $totalFrais      += $op['total_frais'];
+            $totalOperations += $op['total_operations'];
+            $totalMontant    += $op['total_montant'];
+        }
+        unset($op);
+
+        return [
+            'operateurs'      => array_values($operateurs),
+            'total_frais'     => $totalFrais,
+            'total_operations'=> $totalOperations,
+            'total_montant'   => $totalMontant,
+            'date_debut'      => $dateDebut,
+            'date_fin'        => $dateFin,
+        ];
+    }
+
     public function getHistoriqueGlobal(int $clientId, int $limite = 20): array
     {
         // Récupérer le ou les comptes du client
