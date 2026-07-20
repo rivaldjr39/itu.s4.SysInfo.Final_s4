@@ -186,8 +186,8 @@ class Transfert extends Model
         return $this->db->table('operations o')
             ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
                       cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination')
-            ->join('comptes cs', 'cs.id = o.compte_source_id', 'left')
-            ->join('comptes cd', 'cd.id = o.compte_destination_id', 'left')
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
+            ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id', 'left')
             ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
             ->where('o.type_operation_id', $this->typeOperationTransfert)
