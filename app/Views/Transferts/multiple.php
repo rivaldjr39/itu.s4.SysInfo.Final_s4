@@ -426,6 +426,9 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
         input.inputMode = 'numeric';
         input.required = true;
         input.dataset.index = index;
+        input.addEventListener('input', function () {
+            validateOperateurs();
+        });
 
         fieldDiv.appendChild(input);
 
@@ -458,6 +461,41 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
             if (input) input.dataset.index = newIndex;
         });
         recipientCount = rows.length;
+    }
+
+    function validateOperateurs() {
+        const rows = container.querySelectorAll('.recipient-row');
+        const numeros = [];
+        const operateurs = new Set();
+
+        rows.forEach(function(row) {
+            const input = row.querySelector('input');
+            if (input && input.value.trim()) {
+                const numero = input.value.trim();
+                const prefixe = numero.substring(0, 3);
+                if (prefixe.length === 3) {
+                    operateurs.add(prefixe);
+                }
+                numeros.push(numero);
+            }
+        });
+
+        // Vérifier que tous les numéros ont le même opérateur
+        if (operateurs.size > 1) {
+            const message = 'Erreur : Tous les numéros doivent avoir le même opérateur (' + Array.from(operateurs).join(', ') + ').';
+            if (!document.getElementById('operateurError')) {
+                const errorDiv = document.createElement('div');
+                errorDiv.id = 'operateurError';
+                errorDiv.className = 'flash error';
+                errorDiv.style.marginBottom = '18px';
+                errorDiv.textContent = message;
+                container.parentNode.insertBefore(errorDiv, container);
+            } else {
+                document.getElementById('operateurError').textContent = message;
+            }
+        } else if (document.getElementById('operateurError')) {
+            document.getElementById('operateurError').remove();
+        }
     }
 
     function updateRepartition() {

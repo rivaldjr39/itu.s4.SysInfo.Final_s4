@@ -311,8 +311,9 @@ class Transfert extends Model
             return ['success' => false, 'message' => "Le numéro émetteur $numeroSource n'existe pas."];
         }
 
-        // Vérifier que tous les destinataires existent et ne sont pas l'émetteur
+        // Vérifier que tous les destinataires existent, ne sont pas l'émetteur, et ont le même opérateur
         $comptesDestinations = [];
+        $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
         foreach ($numerosDestinations as $numero) {
             $numero = $this->normaliserNumeroTelephone($numero);
 
@@ -323,6 +324,11 @@ class Transfert extends Model
             $compte = $this->getCompteParNumero($numero);
             if (!$compte) {
                 return ['success' => false, 'message' => "Le numéro destinataire $numero n'existe pas."];
+            }
+
+            $operateurDestId = (int) ($compte['operateur_id'] ?? 0);
+            if ($operateurDestId !== $operateurSourceId) {
+                return ['success' => false, 'message' => "Le numéro $numero n'est pas du même opérateur. Seuls les transferts vers le même opérateur sont autorisés."];
             }
 
             $comptesDestinations[] = $compte;
