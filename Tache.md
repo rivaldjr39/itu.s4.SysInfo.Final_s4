@@ -75,6 +75,13 @@
   - fonction pour efectuer le depot  effectuerDepot(int $clientId, float $montant): Rivaldo(ok)
 
 # V2
+
+## Etape 1:
+- base.sql
+  - creation du table operateurs 
+  - Creations du table configurations_commissions
+  - insertions du donnes 
+
 ## cote client
 - Envoi multiple vers plusieurs numéros ( divisé le montant pour chaque numéro)
     - [x] Fonction js (addRecipientField, updateRepartition, calcul frais dynamique)
