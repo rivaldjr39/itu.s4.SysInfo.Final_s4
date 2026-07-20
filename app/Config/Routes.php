@@ -17,6 +17,8 @@ $routes->group('transfert', function ($routes) {
     $routes->get('/', 'TransfertController::index');
     $routes->post('/', 'TransfertController::transferer');
     $routes->get('historique', 'TransfertController::historique');
+    $routes->get('multiple', 'TransfertController::multiple');
+    $routes->post('multiple', 'TransfertController::transfererMultiple');
 });
 $routes->post('api/transfert', 'TransfertController::transfererApi');
 $routes->get('transfert/calculer-frais', 'TransfertController::calculerFraisApi');

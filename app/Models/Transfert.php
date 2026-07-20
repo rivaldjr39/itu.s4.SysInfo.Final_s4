@@ -216,6 +216,124 @@ class Transfert extends Model
         }
     }
 
+    public function effectuerTransfertsMultiple(string $numeroSource, array $numerosDestinations, float $montantTotal): array
+    {
+        $totalRecipients = count($numerosDestinations);
+
+        if ($totalRecipients < 2) {
+            return ['success' => false, 'message' => 'Veuillez spécifier au moins deux destinataires.'];
+        }
+
+        if ($montantTotal <= 0) {
+            return ['success' => false, 'message' => 'Montant total invalide.'];
+        }
+
+        // Montant pour chaque destinataire (arrondi à l'ariary inférieur)
+        $montantParPersonne = floor($montantTotal / $totalRecipients);
+
+        if ($montantParPersonne <= 0) {
+            return ['success' => false, 'message' => 'Le montant par bénéficiaire est trop faible.'];
+        }
+
+        // Vérifier le compte source
+        $compteSource = $this->getCompteParNumero($numeroSource);
+        if (!$compteSource) {
+            return ['success' => false, 'message' => "Le numéro émetteur $numeroSource n'existe pas."];
+        }
+
+        // Calculer les frais pour ce montant unitaire
+        $bareme = $this->getBaremeFrais($montantParPersonne);
+        if (!$bareme) {
+            return ['success' => false, 'message' => 'Aucun barème de frais trouvé pour ce montant.'];
+        }
+
+        $fraisParTransfert = $this->calculerFrais($bareme, $montantParPersonne);
+        $montantTotalParTransfert = $montantParPersonne + $fraisParTransfert;
+        $montantTotalADebiter = $montantTotalParTransfert * $totalRecipients;
+
+        // Vérifier le solde
+        if (!$this->soldeSuffisant($compteSource, $montantTotalADebiter)) {
+            return ['success' => false, 'message' => 'Solde insuffisant pour effectuer tous les transferts.'];
+        }
+
+        // Vérifier que tous les destinataires existent et ne sont pas l'émetteur
+        $comptesDestinations = [];
+        foreach ($numerosDestinations as $numero) {
+            if ($numero === $numeroSource) {
+                return ['success' => false, 'message' => 'Impossible de transférer vers son propre numéro (' . $numero . ').'];
+            }
+
+            $compte = $this->getCompteParNumero($numero);
+            if (!$compte) {
+                return ['success' => false, 'message' => "Le numéro destinataire $numero n'existe pas."];
+            }
+
+            $comptesDestinations[] = $compte;
+        }
+
+        $this->db->transStart();
+
+        try {
+            $references = [];
+            $details = [];
+
+            // Débiter le compte source du montant total
+            $this->db->table('comptes')
+                ->where('client_id', $compteSource['client_id'])
+                ->set('solde', 'solde - ' . $montantTotalADebiter, false)
+                ->update();
+
+            foreach ($comptesDestinations as $i => $compteDest) {
+                // Créditer chaque destination
+                $this->db->table('comptes')
+                    ->where('client_id', $compteDest['client_id'])
+                    ->set('solde', 'solde + ' . $montantParPersonne, false)
+                    ->update();
+
+                $reference = $this->genererReference();
+
+                // Enregistrer l'opération
+                $this->insert([
+                    'reference'              => $reference,
+                    'type_operation_id'      => $this->typeOperationTransfert,
+                    'compte_source_id'       => $compteSource['id'],
+                    'compte_destination_id'  => $compteDest['id'],
+                    'montant'                => $montantParPersonne,
+                    'frais'                  => $fraisParTransfert,
+                    'montant_total'          => $montantTotalParTransfert,
+                    'bareme_frais_id'        => $bareme['id'],
+                    'statut'                 => $this->getStatutId('REUSSI'),
+                    'date_operation'         => date('Y-m-d H:i:s'),
+                ]);
+
+                $references[] = $reference;
+                $details[] = [
+                    'numero'     => $numerosDestinations[$i],
+                    'montant'    => $montantParPersonne,
+                    'frais'      => $fraisParTransfert,
+                    'reference'  => $reference,
+                ];
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new Exception('Échec de la transaction SQL.');
+            }
+
+            return [
+                'success'    => true,
+                'message'    => count($details) . ' transfert(s) effectué(s) avec succès.',
+                'details'    => $details,
+                'frais_total' => $fraisParTransfert * $totalRecipients,
+                'montant_par_personne' => $montantParPersonne,
+            ];
+        } catch (Exception $e) {
+            $this->db->transRollback();
+            return ['success' => false, 'message' => 'Erreur lors des transferts : ' . $e->getMessage()];
+        }
+    }
+
     // ------------------------------------------------------------
     // 7. Historique des transferts d'un client (émis + reçus)
     // ------------------------------------------------------------

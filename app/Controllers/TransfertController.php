@@ -187,6 +187,78 @@ class TransfertController extends BaseController
     }
 
     // ------------------------------------------------------------
+    // Affiche le formulaire d'envoi multiple
+    // ------------------------------------------------------------
+    public function multiple()
+    {
+        $client = $this->resolveCurrentClient();
+
+        if (!$client) {
+            return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
+        }
+
+        return view('Transferts/multiple', [
+            'numero_client' => $client['numero_client'],
+            'client_nom'    => $client['client_nom'],
+        ]);
+    }
+
+    // ------------------------------------------------------------
+    // Traite l'envoi multiple vers plusieurs numéros
+    // ------------------------------------------------------------
+    public function transfererMultiple()
+    {
+        $numeroSource = session()->get('numero_telephone');
+
+        if (!$numeroSource) {
+            return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
+        }
+
+        $numeros = $this->request->getPost('numeros');
+        $montantTotal = (float) $this->request->getPost('montant_total');
+
+        if (!$numeros || !is_array($numeros) || count($numeros) < 2) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Veuillez spécifier au moins deux destinataires.');
+        }
+
+        // Nettoyer les numéros vides
+        $numeros = array_values(array_filter(array_map('trim', $numeros)));
+
+        if (count($numeros) < 2) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Veuillez spécifier au moins deux destinataires.');
+        }
+
+        if ($montantTotal <= 0) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Montant total invalide.');
+        }
+
+        $resultat = $this->transfertModel->effectuerTransfertsMultiple(
+            $numeroSource,
+            $numeros,
+            $montantTotal
+        );
+
+        if (!$resultat['success']) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $resultat['message']);
+        }
+
+        // Construire le message détaillé
+        $message = $resultat['message'] . ' — ' . number_format($resultat['montant_par_personne'], 0, ',', ' ') . ' Ar chacun.';
+        $message .= ' Frais total : ' . number_format($resultat['frais_total'], 0, ',', ' ') . ' Ar.';
+
+        return redirect()->to('/transfert/multiple')
+            ->with('success', $message);
+    }
+
+    // ------------------------------------------------------------
     // Version API (JSON) — utile si le front est en AJAX/SPA
     // ------------------------------------------------------------
     public function transfererApi()

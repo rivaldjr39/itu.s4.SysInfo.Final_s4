@@ -73,3 +73,14 @@
   - function pour prendre les baremes de depot getBaremeFrais(float $montant):Rivaldo(ok)
   - function pour prendre le compte et solde du client  getCompteParClientId() et vgetSolde(int $clientId) :Rivaldo(ok)
   - fonction pour efectuer le depot  effectuerDepot(int $clientId, float $montant): Rivaldo(ok)
+
+# V2
+## cote client
+- Envoi multiple vers plusieurs numéros ( divisé le montant pour chaque numéro)
+    - [x] Fonction js (addRecipientField, updateRepartition, calcul frais dynamique)
+    - [x] Vue multiple.php (formulaire avec champs dynamiques, suppression, ajout)
+    - [x] Controller : methodes multiple() et transfererMultiple()
+    - [x] Model : effectuerTransfertsMultiple()
+    - [x] Routes : GET/POST /transfert/multiple
+    - [x] Lien navigation depuis formulaire simple
+        
