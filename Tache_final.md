@@ -75,33 +75,48 @@
   - fonction pour efectuer le depot  effectuerDepot(int $clientId, float $montant): Rivaldo(ok)
 
 # V2
+## Etape 1: Rivaldo
+- base.sql
+  - creation du table operateurs (ok)
+  - Creations du table configurations_commissions(ok)
+  - insertions du donnes (ok)
 
-## cote client
-- Envoi multiple vers plusieurs numéros ( divisé le montant pour chaque numéro)
-    - [x] Fonction js (addRecipientField, updateRepartition, calcul frais dynamique)
-    - [x] Vue multiple.php (formulaire avec champs dynamiques, suppression, ajout)
-    - [x] Controller : methodes multiple() et transfererMultiple()
-    - [x] Model : effectuerTransfertsMultiple()
-    - [x] Routes : GET/POST /transfert/multiple
-    - [x] Lien navigation depuis formulaire simple
+## Commission inter-opérateur pour les transferts vers un autre opérateur : Rivaldo
+  - [ok] Détection du préfixe et de l'opérateur du numéro destinataire : Rivaldo
+  - [ok] Calcul du frais de transfert de base + commission additionnelle selon l'opérateur destinataire : Rivaldo
+  - [ok] Controller : calcul dynamique des frais avec le numéro destinataire : Rivaldo
+  - [ok] Vue formulaire de transfert : affichage du frais de base, de la commission et du total débité : Rivaldo
+  - [ok] Model Client.php : normalisation des numéros pour accepter les formats avec séparateurs : Rivaldo
+  - [ok] Configuration SQL : table configurations_commissions et données de préfixes/opérateurs :Rivaldo
+        
 
 ## Situation gain via les frais (retrait + transfert) : Tommy
-- [x] Model : getStatsFrais() avec regroupement par operateur (retraits, transferts meme operateur, transferts autre operateur)
-- [x] Controller : gainsFrais() avec filtrage par date et restriction admin
-- [x] Vue : admin/gains_frais.php avec 4 tableaux separes (Retraits, Transferts meme operateur, Transferts autre operateur, Recapitulatif general)
-- [x] Route : GET /admin/gains-frais
-- [x] Lien navigation admin : "Gains Frais" dans le layout client.php
-- [x] Filtre par periode (date debut / date fin)
-- [x] Cartes de synthese (total frais, nombre operations, montant brut)
+- [ok] Model : getStatsFrais() avec regroupement par operateur (retraits, transferts meme operateur, transferts autre operateur)
+- [ok] Controller : gainsFrais() avec filtrage par date et restriction admin
+- [ok] Vue : admin/gains_frais.php avec 4 tableaux separes (Retraits, Transferts meme operateur, Transferts autre operateur, Recapitulatif general)
+- [ok] Route : GET /admin/gains-frais
+- [ok] Lien navigation admin : "Gains Frais" dans le layout client.php
+- [ok] Filtre par periode (date debut / date fin)
+- [ok] Cartes de synthese (total frais, nombre operations, montant brut)
 
-## Gestion des commissions par operateur : Tommy
-- [x] Controller : CommissionController (index, store, update, delete)
-- [x] Vue : admin/commissions/index.php avec tableau + modal CRUD
-- [x] Routes : admin/commissions (GET, POST store, POST update/:id, GET delete/:id)
-- [x] Lien navigation admin : "Commissions" dans le layout client.php
+## Gestion des commissions par operateur : Rivaldo
+- [ok] Controller : CommissionController (index, store, update, delete)
+- [ok] Vue : admin/commissions/index.php avec tableau + modal CRUD
+- [ok] Routes : admin/commissions (GET, POST store, POST update/:id, GET delete/:id)
+- [ok] Lien navigation admin : "Commissions" dans le layout client.php
 
 ## Gestion des prefixes des operateurs : Tommy
-- [x] Controller : PrefixeController (index, store, update, delete, getByOperateurApi)
-- [x] Vue : admin/prefixes/index.php avec tableau + modal CRUD
-- [x] Routes : admin/prefixes (GET, POST store, POST update/:id, GET delete/:id, GET api/operateur/:id)
-- [x] Lien navigation admin : "Préfixes" dans le layout client.php
+- [ok] Controller : PrefixeController (index, store, update, delete, getByOperateurApi)
+- [ok] Vue : admin/prefixes/index.php avec tableau + modal CRUD
+- [ok] Routes : admin/prefixes (GET, POST store, POST update/:id, GET delete/:id, GET api/operateur/:id)
+- [ok] Lien navigation admin : "Préfixes" dans le layout client.php
+
+
+## cote client :Tommy
+- Envoi multiple vers plusieurs numéros ( divisé le montant pour chaque numéro)
+    - [ok] Fonction js (addRecipientField, updateRepartition, calcul frais dynamique)
+    - [ok] Vue multiple.php (formulaire avec champs dynamiques, suppression, ajout)
+    - [ok] Controller : methodes multiple() et transfererMultiple()
+    - [ok] Model : effectuerTransfertsMultiple()
+    - [ok] Routes : GET/POST /transfert/multiple
+    - [ok] Lien navigation depuis formulaire simple
