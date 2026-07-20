@@ -10,7 +10,6 @@ class Transfert extends Model
     protected $table      = 'operations';
     protected $primaryKey = 'id';
 
-    // CodeIgniter utilise $allowedFields, pas $fillable (qui est du Laravel)
     protected $allowedFields = [
         'reference',
         'type_operation_id',

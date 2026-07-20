@@ -13,9 +13,7 @@ class TransfertController extends BaseController
         $this->transfertModel = new Transfert();
     }
 
-    // ------------------------------------------------------------
-    // Affiche le formulaire de transfert
-    // ------------------------------------------------------------
+    
     public function index()
     {
         // Le numéro du client connecté est censé être en session
