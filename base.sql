@@ -25,6 +25,7 @@ CREATE TABLE baremes_frais (
     montant_min         DECIMAL(15,2) NOT NULL,
     montant_max         DECIMAL(15,2) NOT NULL,   -- mettre une très grande valeur si "et plus"
     frais_fixe          DECIMAL(15,2) DEFAULT 0,
+    frais_pourcentage   DECIMAL(5,2) DEFAULT 0,   -- en pourcentage
     date_debut          DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_fin            DATETIME NULL,     
     FOREIGN KEY (type_operation_id) REFERENCES types_operations(id)
