@@ -13,21 +13,80 @@ class TransfertController extends BaseController
         $this->transfertModel = new Transfert();
     }
 
+    private function resolveCurrentClient(): ?array
+    {
+        $numeroClient = session()->get('numero_telephone');
+
+        if (!$numeroClient) {
+            return null;
+        }
+
+        $clientId = session()->get('client_id');
+        $clientNom = session()->get('client_nom') ?? '';
+
+        if (!$clientId) {
+            $clientModel = new \App\Models\Client();
+            $client = $clientModel->findByNumeroTelephone($numeroClient);
+
+            if (!$client) {
+                return null;
+            }
+
+            $clientId = (int) $client['id'];
+            $clientNom = $client['nom'] ?? $clientNom;
+        }
+
+        if (!is_int($clientId) && !ctype_digit((string) $clientId)) {
+            return null;
+        }
+
+        return [
+            'client_id'      => (int) $clientId,
+            'numero_client'  => $numeroClient,
+            'client_nom'     => $clientNom,
+        ];
+    }
+
     // ------------------------------------------------------------
     // Affiche le formulaire de transfert
     // ------------------------------------------------------------
     public function index()
     {
-        // Le numéro du client connecté est censé être en session
-        // (posé au moment du "login" automatique par numéro de téléphone)
-        $numeroClient = session()->get('numero_telephone');
+        $client = $this->resolveCurrentClient();
 
-        if (!$numeroClient) {
+        if (!$client) {
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
         return view('Transferts/formulaire', [
-            'numero_client' => $numeroClient,
+            'numero_client' => $client['numero_client'],
+            'client_nom'    => $client['client_nom'],
+        ]);
+    }
+
+    // ------------------------------------------------------------
+    // Tableau de bord du client connecté
+    // ------------------------------------------------------------
+    public function dashboard()
+    {
+        $client = $this->resolveCurrentClient();
+
+        if (!$client) {
+            return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
+        }
+
+        $operations = $this->transfertModel->getHistoriqueTransferts($client['client_id'], 10);
+        $recentOperations = array_slice($operations, 0, 3);
+
+        return view('dashboard/index', [
+            'numero_client'     => $client['numero_client'],
+            'client_id'         => $client['client_id'],
+            'client_nom'        => $client['client_nom'],
+            'dashboard'         => [
+                'total_operations' => count($operations),
+                'recent_operations' => $recentOperations,
+                'last_operation'    => $recentOperations[0] ?? null,
+            ],
         ]);
     }
 
@@ -77,37 +136,19 @@ class TransfertController extends BaseController
     // ------------------------------------------------------------
     public function historique()
     {
-        $numeroClient = session()->get('numero_telephone');
-        $clientId = session()->get('client_id');
+        $client = $this->resolveCurrentClient();
 
-        if (!$numeroClient) {
+        if (!$client) {
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        if (!$clientId) {
-            // Récupérer le client + son compte pour avoir client_id
-            $clientModel = new \App\Models\Client();
-            $client = $clientModel->findByNumeroTelephone($numeroClient);
-
-            if (!$client) {
-                return redirect()->to('/login')->with('error', 'Client introuvable.');
-            }
-
-            $clientId = (int) $client['id'];
-        }
-
-        if (!is_int($clientId) && !ctype_digit((string) $clientId)) {
-            return redirect()->to('/login')->with('error', 'Session client invalide.');
-        }
-
-        $clientId = (int) $clientId;
-
-        $historique = $this->transfertModel->getHistoriqueTransferts($clientId);
+        $historique = $this->transfertModel->getHistoriqueTransferts($client['client_id']);
 
         return view('Transferts/transfert', [
             'historique'     => $historique,
-            'client_id'      => $clientId,
-            'numero_client'  => $numeroClient,
+            'client_id'      => $client['client_id'],
+            'numero_client'  => $client['numero_client'],
+            'client_nom'     => $client['client_nom'],
         ]);
     }
 

@@ -1,11 +1,8 @@
 <?= $this->extend('layout/client') ?? '' ?>
 
-<?php /*
-  Si tu n'as pas encore de layout('layout/client'), retire la ligne $this->extend
-  ci-dessus et la ligne $this->endSection() en bas — ce fichier est autonome
-  et fonctionne aussi comme page complète (voir version standalone plus bas
-  si besoin).
-*/ ?>
+<?php
+$numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $numero_client : '';
+?>
 
 <?= $this->section('content') ?>
 
@@ -24,33 +21,32 @@
     }
 
     .transfert-page {
-        min-height: 100vh;
-        background: var(--teal-950);
-        background-image:
+        min-height: calc(100vh - 72px);
+        background:
             radial-gradient(circle at 15% 0%, rgba(217, 164, 65, 0.10), transparent 45%),
-            radial-gradient(circle at 85% 100%, rgba(217, 164, 65, 0.08), transparent 50%);
+            radial-gradient(circle at 85% 100%, rgba(217, 164, 65, 0.08), transparent 50%),
+            var(--teal-950);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 32px 16px;
+        padding: 32px 16px 48px;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         color: var(--ink);
     }
 
     .transfert-card {
         width: 100%;
-        max-width: 420px;
+        max-width: 520px;
         background: var(--paper);
-        border-radius: 20px;
+        border-radius: 24px;
         overflow: hidden;
         box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
     }
 
     .transfert-header {
-        background: var(--teal-800);
+        background: linear-gradient(160deg, var(--teal-800), #0c3835);
         color: var(--paper);
-        padding: 28px 28px 22px;
-        position: relative;
+        padding: 28px;
     }
 
     .transfert-header .eyebrow {
@@ -77,15 +73,22 @@
     }
 
     .transfert-body {
-        padding: 26px 28px 28px;
+        padding: 24px 28px 28px;
     }
 
+    .info-banner,
     .flash {
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 12px 14px;
         font-size: 13.5px;
         margin-bottom: 18px;
-        line-height: 1.4;
+        line-height: 1.45;
+    }
+
+    .info-banner {
+        background: rgba(79, 122, 92, 0.12);
+        color: var(--success);
+        border: 1px solid rgba(79, 122, 92, 0.3);
     }
 
     .flash.success {
@@ -104,7 +107,8 @@
         margin-bottom: 20px;
     }
 
-    .field label {
+    .field label,
+    .amount-field label {
         display: block;
         font-size: 12.5px;
         font-weight: 600;
@@ -114,13 +118,12 @@
         margin-bottom: 8px;
     }
 
-    .field input[type="text"],
     .field input[type="tel"] {
         width: 100%;
         box-sizing: border-box;
         border: 1.5px solid var(--line);
         background: #fff;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 13px 14px;
         font-size: 15px;
         font-family: 'IBM Plex Mono', monospace;
@@ -128,29 +131,19 @@
         transition: border-color 0.15s ease;
     }
 
-    .field input:focus {
+    .field input[type="tel"]:focus,
+    .amount-input-row input[type="number"]:focus {
         outline: none;
         border-color: var(--gold-dark);
         box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.2);
     }
 
-    /* Le montant est le geste signature de la page : grand, façon compteur */
     .amount-field {
         border: 1.5px solid var(--line);
-        border-radius: 12px;
+        border-radius: 14px;
         background: #fff;
         padding: 16px 16px 12px;
         margin-bottom: 22px;
-    }
-
-    .amount-field label {
-        font-size: 12.5px;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        color: var(--ink-soft);
-        margin-bottom: 6px;
-        display: block;
     }
 
     .amount-input-row {
@@ -168,24 +161,20 @@
     .amount-input-row input[type="number"] {
         flex: 1;
         border: none;
-        outline: none;
+        appearance: textfield;
+        -moz-appearance: textfield;
         font-family: 'Fraunces', Georgia, serif;
         font-size: 34px;
         font-weight: 600;
         color: var(--ink);
         width: 100%;
         background: transparent;
-        -moz-appearance: textfield;
     }
 
     .amount-input-row input[type="number"]::-webkit-outer-spin-button,
     .amount-input-row input[type="number"]::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
-    }
-
-    .amount-input-row input[type="number"]:focus {
-        color: var(--gold-dark);
     }
 
     .field-error {
@@ -201,34 +190,11 @@
         font-family: 'IBM Plex Mono', monospace;
         color: var(--ink-soft);
         min-height: 18px;
-        opacity: 0;
-        transform: translateY(-2px);
-        transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-
-    .frais-info.visible {
-        opacity: 1;
-        transform: translateY(0);
     }
 
     .frais-info .frais-total {
         color: var(--gold-dark);
         font-weight: 600;
-    }
-
-    .frais-info.loading {
-        color: var(--ink-soft);
-        font-style: italic;
-    }
-
-    .frais-info.error {
-        color: var(--error);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .frais-info {
-            transition: none;
-        }
     }
 
     .btn-transferer {
@@ -254,11 +220,6 @@
         transform: scale(0.98);
     }
 
-    .btn-transferer:focus-visible {
-        outline: 3px solid var(--teal-800);
-        outline-offset: 2px;
-    }
-
     .lien-historique {
         display: block;
         text-align: center;
@@ -273,9 +234,18 @@
         text-decoration: underline;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-        .btn-transferer {
-            transition: none;
+    .dashboard-link {
+        color: inherit;
+        font-weight: 700;
+    }
+
+    @media (max-width: 640px) {
+        .transfert-page {
+            padding: 16px;
+        }
+
+        .transfert-header h1 {
+            font-size: 24px;
         }
     }
 </style>
@@ -289,6 +259,9 @@
         </div>
 
         <div class="transfert-body">
+            <div class="info-banner">
+                Accédez au <a class="dashboard-link" href="<?= site_url('dashboard') ?>">dashboard</a> pour voir vos chiffres clés avant d'effectuer un transfert.
+            </div>
 
             <?php if (session()->getFlashdata('success')): ?>
                 <div class="flash success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -360,13 +333,10 @@
         clearTimeout(timerId);
 
         if (!montant || montant <= 0) {
-            fraisInfo.classList.remove('visible', 'loading', 'error');
             fraisInfo.textContent = '';
             return;
         }
 
-        fraisInfo.classList.add('visible', 'loading');
-        fraisInfo.classList.remove('error');
         fraisInfo.textContent = 'Calcul des frais…';
 
         timerId = setTimeout(() => {
@@ -378,9 +348,7 @@
                     return res.json();
                 })
                 .then((data) => {
-                    fraisInfo.classList.remove('loading', 'error');
                     if (!data.success) {
-                        fraisInfo.classList.add('error');
                         fraisInfo.textContent = data.message || 'Impossible de calculer les frais.';
                         return;
                     }
@@ -390,8 +358,6 @@
                         data.montant_total.toLocaleString('fr-FR') + ' Ar</span>';
                 })
                 .catch(() => {
-                    fraisInfo.classList.remove('loading');
-                    fraisInfo.classList.add('error');
                     fraisInfo.textContent = 'Impossible de calculer les frais.';
                 });
         }, 350);

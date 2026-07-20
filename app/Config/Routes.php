@@ -10,6 +10,7 @@ $routes->get('/', 'Login::index');
 $routes->get('login', 'Login::index');
 $routes->post('login', 'Login::authenticate');
 $routes->get('logout', 'Login::logout');
+$routes->get('dashboard', 'TransfertController::dashboard');
 
 
 $routes->group('transfert', function ($routes) {

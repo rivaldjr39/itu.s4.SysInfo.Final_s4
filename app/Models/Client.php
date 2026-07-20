@@ -23,7 +23,9 @@ class Client extends Model
         foreach (['client', 'clients'] as $table) {
             try {
                 $client = $this->db->table($table)
+                    ->select('COALESCE(id, rowid) AS id, numero_telephone, nom, role, prefixe_id, date_premiere_connexion')
                     ->where('numero_telephone', $numeroTelephone)
+                    ->limit(1)
                     ->get()
                     ->getRowArray();
 

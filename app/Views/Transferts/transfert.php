@@ -5,6 +5,11 @@
   $this->endSection() en bas — la page fonctionne aussi seule.
 */ ?>
 
+<?php
+$numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $numero_client : '';
+$client_id = isset($client_id) && !is_array($client_id) ? (int) $client_id : 0;
+?>
+
 <?= $this->section('content') ?>
 
 <style>
@@ -70,6 +75,13 @@
         font-family: 'IBM Plex Mono', monospace;
         font-size: 13px;
         color: rgba(246, 243, 236, 0.75);
+    }
+
+    .historique-header .client-id {
+        margin-top: 4px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+        color: rgba(246, 243, 236, 0.58);
     }
 
     .historique-body {
@@ -252,6 +264,7 @@
             <p class="eyebrow">Mes opérations</p>
             <h1>Historique des transferts</h1>
             <div class="from-number"><?= esc($numero_client) ?></div>
+            <div class="client-id">ID client #<?= esc((string) $client_id) ?></div>
         </div>
 
         <div class="historique-body">

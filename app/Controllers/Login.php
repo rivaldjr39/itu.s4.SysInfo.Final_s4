@@ -9,7 +9,7 @@ class Login extends BaseController
     public function index()
     {
         if (session()->get('numero_telephone')) {
-            return redirect()->to('/transfert');
+            return redirect()->to('/dashboard');
         }
 
         return view('auth/login');
@@ -45,7 +45,7 @@ class Login extends BaseController
             'client_role'     => $client['role'] ?? 'CLIENT',
         ]);
 
-        return redirect()->to('/transfert')->with('success', 'Connexion réussie.');
+        return redirect()->to('/dashboard')->with('success', 'Connexion réussie.');
     }
 
     public function logout()

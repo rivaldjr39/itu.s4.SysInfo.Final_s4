@@ -66,9 +66,10 @@ class Transfert extends Model
     public function getCompteParNumero(string $numero): ?array
     {
         $compte = $this->db->table('comptes co')
-            ->select('co.*')
-            ->join('client cl', 'cl.id = co.client_id')
+            ->select('COALESCE(co.id, co.rowid) AS id, co.client_id, co.solde, co.date_creation')
+            ->join('client cl', 'COALESCE(cl.id, cl.rowid) = co.client_id')
             ->where('cl.numero_telephone', $numero)
+            ->limit(1)
             ->get()
             ->getRowArray();
 
@@ -122,7 +123,7 @@ class Transfert extends Model
         }
 
         $frais = $this->calculerFrais($bareme, $montant);
-        $montantTotal = $montant + $frais; // débité chez l'émetteur
+        $montantTotal = $montant + $frais;
 
         if (!$this->soldeSuffisant($compteSource, $montantTotal)) {
             return ['success' => false, 'message' => 'Solde insuffisant (montant + frais).'];
@@ -187,8 +188,8 @@ class Transfert extends Model
                       cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination')
             ->join('comptes cs', 'cs.id = o.compte_source_id', 'left')
             ->join('comptes cd', 'cd.id = o.compte_destination_id', 'left')
-            ->join('client cls', 'cls.id = cs.client_id', 'left')
-            ->join('client cld', 'cld.id = cd.client_id', 'left')
+            ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
+            ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
             ->where('o.type_operation_id', $this->typeOperationTransfert)
             ->groupStart()
                 ->where('cs.client_id', $clientId)
