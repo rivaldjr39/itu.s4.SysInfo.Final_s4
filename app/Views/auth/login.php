@@ -303,6 +303,7 @@
                             id="numero_telephone"
                             name="numero_telephone"
                             placeholder="0331234567"
+                            value="0331234567"
                             value="<?= esc(old('numero_telephone') ?? '') ?>"
                             inputmode="numeric"
                             autocomplete="tel"

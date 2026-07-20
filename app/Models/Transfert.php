@@ -50,6 +50,23 @@ class Transfert extends Model
     }
 
     // ------------------------------------------------------------
+    // 1 bis. Récupérer le solde du client connecté
+    // ------------------------------------------------------------
+    public function getSolde(int $clientId): ?float
+    {
+        $compte = $this->db->table('comptes')
+            ->select('COALESCE(solde, 0) AS solde')
+            ->where('client_id', $clientId)
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+        if (!$compte) {
+            return null;
+        }
+        return (float) $compte['solde'];
+    }
+
+    // ------------------------------------------------------------
     // 2. Calculer le montant des frais à partir d'un barème
     // ------------------------------------------------------------
     public function calculerFrais(array $bareme, float $montant): float
@@ -136,13 +153,13 @@ class Transfert extends Model
         try {
             // Débit du compte source
             $this->db->table('comptes')
-                ->where('id', $compteSource['id'])
+                ->where('client_id', $compteSource['client_id'])
                 ->set('solde', 'solde - ' . $montantTotal, false)
                 ->update();
 
             // Crédit du compte destination (montant net, sans les frais)
             $this->db->table('comptes')
-                ->where('id', $compteDestination['id'])
+                ->where('client_id', $compteDestination['client_id'])
                 ->set('solde', 'solde + ' . $montant, false)
                 ->update();
 

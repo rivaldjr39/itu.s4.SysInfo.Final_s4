@@ -77,15 +77,16 @@ class TransfertController extends BaseController
 
         $operations = $this->transfertModel->getHistoriqueTransferts($client['client_id'], 10);
         $recentOperations = array_slice($operations, 0, 3);
+        $solde = $this->transfertModel->getSolde($client['client_id']);
 
         return view('dashboard/index', [
             'numero_client'     => $client['numero_client'],
             'client_id'         => $client['client_id'],
             'client_nom'        => $client['client_nom'],
+            'solde'             => $solde,
             'dashboard'         => [
                 'total_operations' => count($operations),
                 'recent_operations' => $recentOperations,
-                'last_operation'    => $recentOperations[0] ?? null,
             ],
         ]);
     }

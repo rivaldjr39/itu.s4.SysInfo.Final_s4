@@ -328,21 +328,9 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
             </div>
 
             <div class="stat-card">
-                <span>Dernière opération</span>
-                <strong>
-                    <?php if (!empty($dashboard['last_operation'])): ?>
-                        <?= number_format((float) $dashboard['last_operation']['montant_total'], 0, ',', ' ') ?> Ar
-                    <?php else: ?>
-                        --
-                    <?php endif; ?>
-                </strong>
-                <small>
-                    <?php if (!empty($dashboard['last_operation'])): ?>
-                        Réf. <?= esc($dashboard['last_operation']['reference']) ?>
-                    <?php else: ?>
-                        Aucune opération récente.
-                    <?php endif; ?>
-                </small>
+                <span>Solde</span>
+                <strong><?= number_format((float) ($solde ?? 0), 0, ',', ' ') ?> Ar</strong>
+                <small>Montant disponible sur le compte client.</small>
             </div>
 
             <div class="stat-card">
