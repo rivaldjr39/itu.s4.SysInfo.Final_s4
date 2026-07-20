@@ -1591,3 +1591,185 @@ in SYSTEMPATH/Database/SQLite3/Connection.php on line 164.
 10 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
 11 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
 12 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:53:43 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:53:44 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:54:15 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:02 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:03 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:03 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:03 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:03 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:03 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:04 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:04 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:17 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')
+CRITICAL - 2026-07-20 11:55:18 --> ErrorException: Undefined array key "rowid"
+[Method: GET, Route: dashboard]
+in APPPATH/Models/Transfert.php on line 372.
+ 1 APPPATH/Models/Transfert.php(372): CodeIgniter\Debug\Exceptions->errorHandler()
+ 2 [internal function]: App\Models\Transfert->App\Models\{closure}()
+ 3 APPPATH/Models/Transfert.php(371): array_map()
+ 4 APPPATH/Controllers/TransfertController.php(78): App\Models\Transfert->getHistoriqueGlobal()
+ 5 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\TransfertController->dashboard()
+ 6 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController()
+ 7 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest()
+ 8 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter()
+10 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb()
+11 SYSTEMPATH/rewrite.php(44): require_once('/home/tommy/Documents/S4/Systeme d\'information (Mr Rojo)/itu.s4.SysInfo.Final_s4/public/index.php')

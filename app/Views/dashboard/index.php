@@ -265,6 +265,108 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
         white-space: nowrap;
     }
 
+    .op-left {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .op-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 700;
+        font-size: 17px;
+    }
+
+    .op-icon.depot {
+        background: rgba(79, 122, 92, 0.12);
+        color: var(--success);
+    }
+
+    .op-icon.envoye,
+    .op-icon.retrait {
+        background: rgba(193, 69, 43, 0.1);
+        color: var(--error);
+    }
+
+    .op-icon.recu {
+        background: rgba(79, 122, 92, 0.12);
+        color: var(--success);
+    }
+
+    .op-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .op-details .label {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: 14px;
+    }
+
+    .op-details .meta {
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-top: 3px;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .op-details .meta-frais {
+        font-size: 11px;
+        color: var(--ink-soft);
+        margin-top: 2px;
+        font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .op-right {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+    }
+
+    .operation-item .amount.positif {
+        color: var(--success);
+    }
+
+    .operation-item .amount.negatif {
+        color: var(--error);
+    }
+
+    .operation-item .amount {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 20px;
+        white-space: nowrap;
+    }
+
+    .statut-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 2px 7px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+
+    .statut-badge.reussi {
+        background: rgba(79, 122, 92, 0.12);
+        color: var(--success);
+    }
+
+    .statut-badge.echec {
+        background: rgba(193, 69, 43, 0.1);
+        color: var(--error);
+    }
+
     .empty-state {
         padding: 26px 14px;
         text-align: center;
@@ -311,7 +413,7 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
             <div class="stat-card">
                 <span>Opérations</span>
                 <strong><?= esc((string) ($dashboard['total_operations'] ?? 0)) ?></strong>
-                <small>Nombre total d'opérations (transferts & retraits) sur ce compte.</small>
+                <small>Nombre total d'opérations (dépôts, transferts & retraits) sur ce compte.</small>
             </div>
 
             <div class="stat-card">
@@ -347,14 +449,22 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
                             $estEnvoye = !$isRetrait && !$isDepot && !empty($operation['source_client']) && (int) $operation['source_client'] === (int) $client_id;
 
                             if ($isDepot) {
+                                $icone = '↓';
+                                $iconeClass = 'depot';
                                 $libelle = 'Dépôt sur votre compte';
                                 $montant = (float) $operation['montant'];
                                 $signe = '+';
+                                $frais = (float) ($operation['frais'] ?? 0);
                             } elseif ($isRetrait) {
+                                $icone = '↑';
+                                $iconeClass = 'retrait';
                                 $libelle = "Retrait d'espèces";
                                 $montant = (float) $operation['montant_total'];
                                 $signe = '-';
+                                $frais = (float) ($operation['frais'] ?? 0);
                             } else {
+                                $icone = $estEnvoye ? '↑' : '↓';
+                                $iconeClass = $estEnvoye ? 'envoye' : 'recu';
                                 $libelle = $estEnvoye ? 'Envoyé à ' : 'Reçu de ';
                                 $autreNumero = $estEnvoye
                                     ? ($operation['numero_destination'] ?? 'Numéro inconnu')
@@ -362,14 +472,27 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
                                 $libelle .= esc($autreNumero);
                                 $montant = $estEnvoye ? (float) $operation['montant_total'] : (float) $operation['montant'];
                                 $signe = $estEnvoye ? '-' : '+';
+                                $frais = $estEnvoye ? (float) ($operation['frais'] ?? 0) : 0;
                             }
+
+                            $statutLibelle = $operation['statut_libelle'] ?? 'REUSSI';
+                            $statutClass = strtolower($statutLibelle) === 'reussi' ? 'reussi' : 'echec';
                         ?>
                         <article class="operation-item">
-                            <div>
+                            <div class="op-left">
+                                <span class="op-icon <?= $iconeClass ?>"><?= $icone ?></span>
+                            </div>
+                            <div class="op-details">
                                 <div class="label"><?= $libelle ?></div>
                                 <div class="meta"><?= esc(date('d/m/Y H:i', strtotime($operation['date_operation']))) ?> · <?= esc($operation['reference']) ?></div>
+                                <?php if ($frais > 0): ?>
+                                    <div class="meta-frais">Frais : <?= number_format($frais, 0, ',', ' ') ?> Ar</div>
+                                <?php endif; ?>
                             </div>
-                            <div class="amount"><?= $signe ?><?= number_format($montant, 0, ',', ' ') ?> Ar</div>
+                            <div class="op-right">
+                                <div class="amount <?= $signe === '+' ? 'positif' : 'negatif' ?>"><?= $signe ?><?= number_format($montant, 0, ',', ' ') ?> Ar</div>
+                                <span class="statut-badge <?= $statutClass ?>"><?= esc($statutLibelle) ?></span>
+                            </div>
                         </article>
                     <?php endforeach; ?>
                 </div>

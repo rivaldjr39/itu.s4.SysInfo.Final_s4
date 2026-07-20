@@ -341,11 +341,13 @@ class Transfert extends Model
     {
         return $this->db->table('operations o')
             ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
-                      cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination')
+                      cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination,
+                      st.libelle AS statut_libelle')
             ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
             ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id', 'left')
             ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
+            ->join('statut st', 'st.id = o.statut', 'left')
             ->where('o.type_operation_id', $this->typeOperationTransfert)
             ->groupStart()
                 ->where('cs.client_id', $clientId)
@@ -360,19 +362,33 @@ class Transfert extends Model
     // Historique global du client : transferts, retraits et dépôts
     public function getHistoriqueGlobal(int $clientId, int $limite = 20): array
     {
+        // Récupérer le ou les comptes du client
+        $comptesClient = $this->db->table('comptes')
+            ->where('client_id', $clientId)
+            ->get()
+            ->getResultArray();
+
+        $compteIds = array_map(function($c) {
+            return (int) ($c['id'] ?? $c['rowid']);
+        }, $comptesClient);
+
+        if (empty($compteIds)) {
+            return [];
+        }
+
         return $this->db->table('operations o')
             ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
                       cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination,
-                      top.libelle AS type_operation_libelle, top.code AS type_operation_code')
+                      top.libelle AS type_operation_libelle, top.code AS type_operation_code,
+                      st.libelle AS statut_libelle')
             ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
             ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id', 'left')
             ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
             ->join('types_operations top', 'COALESCE(top.id, top.rowid) = o.type_operation_id', 'left')
-            ->groupStart()
-                ->where('cs.client_id', $clientId)
-                ->orWhere('cd.client_id', $clientId)
-            ->groupEnd()
+            ->join('statut st', 'st.id = o.statut', 'left')
+            ->whereIn('o.compte_source_id', $compteIds, false)
+            ->orWhereIn('o.compte_destination_id', $compteIds, false)
             ->orderBy('o.date_operation', 'DESC')
             ->limit($limite)
             ->get()

@@ -301,8 +301,8 @@ $client_id = isset($client_id) && !is_array($client_id) ? (int) $client_id : 0;
                                 <?php if ($estEnvoye && (float) $t['frais'] > 0): ?>
                                     <div class="frais">Frais : <?= number_format((float) $t['frais'], 0, ',', ' ') ?> Ar</div>
                                 <?php endif; ?>
-                                <span class="statut-badge <?= strtolower($t['statut']) === 'reussi' ? 'reussi' : 'echec' ?>">
-                                    <?= esc($t['statut']) ?>
+                                <span class="statut-badge <?= strtolower($t['statut_libelle'] ?? '') === 'reussi' ? 'reussi' : 'echec' ?>">
+                                    <?= esc($t['statut_libelle'] ?? 'INCONNU') ?>
                                 </span>
                             </div>
                         </div>
