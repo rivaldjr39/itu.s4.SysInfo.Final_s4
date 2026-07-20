@@ -1,47 +1,73 @@
-INSERT INTO prefixes (prefixe) VALUES ('033'), ('037');
-
-INSERT INTO types_operations (code, libelle) VALUES
-('DEPOT', 'Dépôt'),
-('RETRAIT', 'Retrait'),
-('TRANSFERT', 'Transfert');
-
--- Exemple de barème par tranche pour le retrait (id type_operation = 2)
-INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage) VALUES
-(2, 0,      5000,    200,  0),
-(2, 5001,   20000,   500,  0),
-(2, 20001,  100000,  0,    2.0),
-(2, 100001, 999999999, 0,  1.5);
 
 
-INSERT INTO client (numero_telephone, nom, Role, prefixe_id
-) VALUES
-('0331234567', 'Alice', 'CLIENT', 1),
-('0379876543', 'Bob', 'CLIENT', 2),
-('0330000001', 'Charlie', 'ADMIN', 1);
+-- Préfixes
+INSERT INTO prefixes (prefixe, actif) VALUES
+('033', 1),
+('037', 1);
+
+-- Types d'opérations
+INSERT INTO types_operations (code, libelle, actif) VALUES
+('DEPOT', 'Dépôt', 1),
+('RETRAIT', 'Retrait', 1),
+('TRANSFERT', 'Transfert', 1);
+
+-- Statuts
+INSERT INTO statut (libelle) VALUES
+('REUSSI'),
+('ECHEC');
+
+
+-- DEPOT
+INSERT INTO baremes_frais
+(type_operation_id, montant_min, montant_max, frais_fixe)
+VALUES
+(1,0,999999999,0);
+
+-- RETRAIT
+INSERT INTO baremes_frais
+(type_operation_id,montant_min,montant_max,frais_fixe)
+VALUES
+(2,100,1000,50),
+(2,1001,5000,50),
+(2,5001,10000,100),
+(2,10001,25000,200),
+(2,25001,50000,400),
+(2,50001,100000,800),
+(2,100001,250000,1500),
+(2,250001,500000,1500),
+(2,500001,1000000,2500),
+(2,1000001,2000000,3000);
+
+-- TRANSFERT (exemple)
+INSERT INTO baremes_frais
+(type_operation_id,montant_min,montant_max,frais_fixe)
+VALUES
+(3,0,10000,200),
+(3,10001,50000,500),
+(3,50001,100000,1000),
+(3,100001,999999999,2000);
 
 -- ============================================================
--- VUES UTILES POUR LE CÔTÉ OPÉRATEUR
+-- CLIENTS
 -- ============================================================
 
--- Situation des gains (frais perçus sur retrait/transfert)
-CREATE VIEW vue_gains_operateur AS
-SELECT
-    t.libelle           AS type_operation,
-    DATE(o.date_operation) AS jour,
-    SUM(o.frais)         AS total_frais,
-    COUNT(*)             AS nombre_operations
-FROM operations o
-JOIN types_operations t ON t.id = o.type_operation_id
-WHERE o.statut = 'REUSSI' AND t.code IN ('RETRAIT', 'TRANSFERT')
-GROUP BY t.libelle, DATE(o.date_operation);
+INSERT INTO client
+(numero_telephone,nom,role,prefixe_id)
+VALUES
+('0331234567','Administrateur','ADMIN',1),
+('0331111111','Jean', 'CLIENT',1),
+('0332222222','Paul', 'CLIENT',1),
+('0373333333','Marie','CLIENT',2),
+('0374444444','Luc',  'CLIENT',2);
 
--- Situation des comptes clients
-CREATE VIEW vue_situation_comptes AS
-SELECT
-    cl.numero_telephone,
-    c.solde,
-    c.date_creation,
-    (SELECT COUNT(*) FROM operations o
-     WHERE o.compte_source_id = c.id OR o.compte_destination_id = c.id) AS nombre_operations
-FROM comptes c
-JOIN clients cl ON cl.id = c.client_id;
+-- ============================================================
+-- COMPTES
+-- ============================================================
+
+INSERT INTO comptes (client_id,solde)
+VALUES
+(1,0),
+(2,500000),
+(3,120000),
+(4,75000),
+(5,20000);
