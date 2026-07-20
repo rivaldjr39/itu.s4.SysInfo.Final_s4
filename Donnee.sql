@@ -13,6 +13,12 @@ INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais_fi
 (2, 100001, 999999999, 0,  1.5);
 
 
+INSERT INTO client (numero_telephone, nom, Role, prefixe_id
+) VALUES
+('0331234567', 'Alice', 'CLIENT', 1),
+('0379876543', 'Bob', 'CLIENT', 2),
+('0330000001', 'Charlie', 'ADMIN', 1);
+
 -- ============================================================
 -- VUES UTILES POUR LE CÔTÉ OPÉRATEUR
 -- ============================================================

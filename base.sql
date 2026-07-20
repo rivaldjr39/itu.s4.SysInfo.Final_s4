@@ -31,10 +31,13 @@ CREATE TABLE baremes_frais (
     FOREIGN KEY (type_operation_id) REFERENCES types_operations(id)
 );
 
-CREATE TABLE clients (
+
+
+CREATE TABLE client (
     id                        INT AUTO_INCREMENT PRIMARY KEY,
     numero_telephone          VARCHAR(15) NOT NULL UNIQUE,
     nom VARCHAR(50) NOT NULL,
+    role TEXT NOT NULL DEFAULT 'CLIENT' CHECK (role IN ('CLIENT', 'ADMIN')),
     prefixe_id                INT NOT NULL,
     date_premiere_connexion   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (prefixe_id) REFERENCES prefixes(id)
