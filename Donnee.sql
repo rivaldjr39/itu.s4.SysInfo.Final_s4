@@ -35,6 +35,8 @@ JOIN types_operations t ON t.id = o.type_operation_id
 WHERE o.statut = 'REUSSI' AND t.code IN ('RETRAIT', 'TRANSFERT')
 GROUP BY t.libelle, DATE(o.date_operation);
 
+
+
 -- Situation des comptes clients
 CREATE VIEW vue_situation_comptes AS
 SELECT
