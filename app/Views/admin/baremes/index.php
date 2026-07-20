@@ -114,6 +114,50 @@
         background: #a83821;
     }
 
+    .filter-card {
+        background: rgba(246, 243, 236, 0.98);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 20px 24px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        letter-spacing: 0.05em;
+    }
+
+    .filter-group select {
+        width: 100%;
+        border: 1.5px solid var(--line);
+        background: #fff;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.15s ease;
+    }
+
+    .filter-group select:focus {
+        border-color: var(--gold-dark);
+        box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.2);
+    }
+
     .panel-card {
         background: rgba(246, 243, 236, 0.98);
         border-radius: 24px;
@@ -231,6 +275,11 @@
         .btn-action {
             width: 100%;
         }
+
+        .filter-card {
+            flex-direction: column;
+            gap: 12px;
+        }
     }
 </style>
 
@@ -251,6 +300,28 @@
                 <p>Configurez et modifiez les grilles tarifaires appliquées aux différentes opérations (Dépôt, Retrait, Transfert).</p>
             </div>
             <a class="btn-action btn-primary" href="<?= site_url('admin/baremes/create') ?>">Ajouter un barème</a>
+        </section>
+
+        <!-- FILTRES INTERACTIFS -->
+        <section class="filter-card" aria-label="Filtres de recherche">
+            <div class="filter-group">
+                <label for="filter-type">Type d'opération</label>
+                <select id="filter-type">
+                    <option value="ALL">Tous les types</option>
+                    <option value="DEPOT">Dépôt</option>
+                    <option value="RETRAIT">Retrait</option>
+                    <option value="TRANSFERT">Transfert</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-status">Statut du barème</label>
+                <select id="filter-status">
+                    <option value="ALL">Tous les statuts</option>
+                    <option value="Actif">Actif</option>
+                    <option value="Planifié">Planifié</option>
+                    <option value="Expiré">Expiré</option>
+                </select>
+            </div>
         </section>
 
         <section class="panel-card">
@@ -288,7 +359,7 @@
                                 $statutClass = 'status-expired';
                             }
                         ?>
-                            <tr>
+                            <tr data-type="<?= esc($b['type_operation_code']) ?>" data-status="<?= $statut ?>">
                                 <td>
                                     <strong><?= esc($b['type_operation_libelle']) ?></strong>
                                 </td>
@@ -332,5 +403,37 @@
 
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterType = document.getElementById('filter-type');
+    const filterStatus = document.getElementById('filter-status');
+    const rows = document.querySelectorAll('tbody tr');
+
+    function applyFilters() {
+        const typeVal = filterType.value;
+        const statusVal = filterStatus.value;
+
+        rows.forEach(row => {
+            const rowType = row.getAttribute('data-type');
+            const rowStatus = row.getAttribute('data-status');
+
+            const typeMatch = (typeVal === 'ALL' || rowType === typeVal);
+            const statusMatch = (statusVal === 'ALL' || rowStatus === statusVal);
+
+            if (typeMatch && statusMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    if (filterType && filterStatus) {
+        filterType.addEventListener('change', applyFilters);
+        filterStatus.addEventListener('change', applyFilters);
+    }
+});
+</script>
 
 <?= $this->endSection() ?>

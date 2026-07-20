@@ -217,4 +217,28 @@ class Transfert extends Model
             ->get()
             ->getResultArray();
     }
+
+    // ------------------------------------------------------------
+    // 8. Historique global d'un client (transferts + retraits)
+    // ------------------------------------------------------------
+    public function getHistoriqueGlobal(int $clientId, int $limite = 20): array
+    {
+        return $this->db->table('operations o')
+            ->select('o.*, cs.client_id AS source_client, cd.client_id AS dest_client,
+                      cls.numero_telephone AS numero_source, cld.numero_telephone AS numero_destination,
+                      top.libelle AS type_operation_libelle, top.code AS type_operation_code')
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
+            ->join('comptes cd', 'COALESCE(cd.id, cd.rowid) = o.compte_destination_id', 'left')
+            ->join('client cls', 'COALESCE(cls.id, cls.rowid) = cs.client_id', 'left')
+            ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
+            ->join('types_operations top', 'COALESCE(top.id, top.rowid) = o.type_operation_id', 'left')
+            ->groupStart()
+                ->where('cs.client_id', $clientId)
+                ->orWhere('cd.client_id', $clientId)
+            ->groupEnd()
+            ->orderBy('o.date_operation', 'DESC')
+            ->limit($limite)
+            ->get()
+            ->getResultArray();
+    }
 }

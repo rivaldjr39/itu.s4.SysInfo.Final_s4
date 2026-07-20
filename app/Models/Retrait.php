@@ -28,38 +28,13 @@ class Retrait extends Model
     // ID du type d'opération "RETRAIT" dans la table types_operations
     protected int $typeOperationRetrait = 2;
 
-    // Cache local des id de la table statut (résolus par libellé, ex: REUSSI, ECHEC)
-    protected array $statutCache = [];
-
-    // ------------------------------------------------------------
-    // 0. Résoudre l'id de la table statut à partir de son libellé
-    // ------------------------------------------------------------
-    protected function getStatutId(string $libelle): int
-    {
-        if (isset($this->statutCache[$libelle])) {
-            return $this->statutCache[$libelle];
-        }
-
-        $statut = $this->db->table('statut')
-            ->where('libelle', $libelle)
-            ->get()
-            ->getRowArray();
-
-        if (!$statut) {
-            throw new Exception("Le statut '$libelle' n'existe pas dans la table statut.");
-        }
-
-        $this->statutCache[$libelle] = (int) $statut['id'];
-
-        return $this->statutCache[$libelle];
-    }
-
     // ------------------------------------------------------------
     // 1. Récupérer le barème de frais applicable à un montant donné
     // ------------------------------------------------------------
     public function getBaremeFrais(float $montant): ?array
     {
         $bareme = $this->db->table('baremes_frais')
+            ->select('COALESCE(id, rowid) AS id, type_operation_id, montant_min, montant_max, frais_fixe, frais_pourcentage, date_debut, date_fin')
             ->where('type_operation_id', $this->typeOperationRetrait)
             ->where('montant_min <=', $montant)
             ->where('montant_max >=', $montant)
@@ -109,9 +84,10 @@ class Retrait extends Model
     public function getCompteParNumero(string $numero): ?array
     {
         $compte = $this->db->table('comptes co')
-            ->select('co.*')
-            ->join('client cl', 'cl.id = co.client_id')
+            ->select('COALESCE(co.id, co.rowid) AS id, co.client_id, co.solde, co.date_creation')
+            ->join('client cl', 'COALESCE(cl.id, cl.rowid) = co.client_id')
             ->where('cl.numero_telephone', $numero)
+            ->limit(1)
             ->get()
             ->getRowArray();
 
@@ -171,11 +147,12 @@ class Retrait extends Model
         try {
             // Débit du compte (montant retiré + frais)
             $this->db->table('comptes')
-                ->where('id', $compte['id'])
+                ->where('client_id', $compte['client_id'])
                 ->set('solde', 'solde - ' . $montantTotal, false)
                 ->update();
 
             // Enregistrement de l'opération : pas de compte_destination_id (retrait = sortie du système)
+            // statut est enregistré en texte brut pour être cohérent avec le module transfert
             $this->insert([
                 'reference'              => $reference,
                 'type_operation_id'      => $this->typeOperationRetrait,
@@ -185,7 +162,7 @@ class Retrait extends Model
                 'frais'                  => $frais,
                 'montant_total'          => $montantTotal,
                 'bareme_frais_id'        => $bareme['id'],
-                'statut'                 => $this->getStatutId('REUSSI'),
+                'statut'                 => 'REUSSI',
                 'date_operation'         => date('Y-m-d H:i:s'),
             ]);
 
@@ -213,9 +190,8 @@ class Retrait extends Model
     public function getHistoriqueRetraits(int $clientId, int $limite = 20): array
     {
         return $this->db->table('operations o')
-            ->select('o.*, cs.client_id AS source_client, st.libelle AS statut_libelle')
-            ->join('comptes cs', 'cs.id = o.compte_source_id', 'left')
-            ->join('statut st', 'st.id = o.statut', 'left')
+            ->select('o.*, cs.client_id AS source_client, o.statut AS statut_libelle')
+            ->join('comptes cs', 'COALESCE(cs.id, cs.rowid) = o.compte_source_id', 'left')
             ->where('o.type_operation_id', $this->typeOperationRetrait)
             ->where('cs.client_id', $clientId)
             ->orderBy('o.date_operation', 'DESC')

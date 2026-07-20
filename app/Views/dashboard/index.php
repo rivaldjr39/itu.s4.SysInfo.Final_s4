@@ -322,9 +322,9 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
 
         <section class="stats-grid" aria-label="Résumé du compte">
             <div class="stat-card">
-                <span>Transferts</span>
+                <span>Opérations</span>
                 <strong><?= esc((string) ($dashboard['total_operations'] ?? 0)) ?></strong>
-                <small>Nombre total d'opérations enregistrées sur ce compte.</small>
+                <small>Nombre total d'opérations (transferts & retraits) sur ce compte.</small>
             </div>
 
             <div class="stat-card">
@@ -358,19 +358,29 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
                 <div class="operations-list">
                     <?php foreach ($dashboard['recent_operations'] as $operation): ?>
                         <?php
-                            $estEnvoye = !empty($operation['source_client']) && (int) $operation['source_client'] === (int) $client_id;
-                            $libelle = $estEnvoye ? 'Envoyé' : 'Reçu';
-                            $autreNumero = $estEnvoye
-                                ? ($operation['numero_destination'] ?? 'Numéro inconnu')
-                                : ($operation['numero_source'] ?? 'Numéro inconnu');
-                            $montant = $estEnvoye ? (float) $operation['montant_total'] : (float) $operation['montant'];
+                            $isRetrait = isset($operation['type_operation_code']) && $operation['type_operation_code'] === 'RETRAIT';
+                            $estEnvoye = !$isRetrait && !empty($operation['source_client']) && (int) $operation['source_client'] === (int) $client_id;
+                            
+                            if ($isRetrait) {
+                                $libelle = "Retrait d'espèces";
+                                $montant = (float) $operation['montant_total'];
+                                $signe = '-';
+                            } else {
+                                $libelle = $estEnvoye ? 'Envoyé à ' : 'Reçu de ';
+                                $autreNumero = $estEnvoye
+                                    ? ($operation['numero_destination'] ?? 'Numéro inconnu')
+                                    : ($operation['numero_source'] ?? 'Numéro inconnu');
+                                $libelle .= esc($autreNumero);
+                                $montant = $estEnvoye ? (float) $operation['montant_total'] : (float) $operation['montant'];
+                                $signe = $estEnvoye ? '-' : '+';
+                            }
                         ?>
                         <article class="operation-item">
                             <div>
-                                <div class="label"><?= esc($libelle) ?> <?= esc($autreNumero) ?></div>
+                                <div class="label"><?= $libelle ?></div>
                                 <div class="meta"><?= esc(date('d/m/Y H:i', strtotime($operation['date_operation']))) ?> · <?= esc($operation['reference']) ?></div>
                             </div>
-                            <div class="amount"><?= $estEnvoye ? '-' : '+' ?><?= number_format($montant, 0, ',', ' ') ?> Ar</div>
+                            <div class="amount"><?= $signe ?><?= number_format($montant, 0, ',', ' ') ?> Ar</div>
                         </article>
                     <?php endforeach; ?>
                 </div>

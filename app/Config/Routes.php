@@ -21,6 +21,13 @@ $routes->group('transfert', function ($routes) {
 $routes->post('api/transfert', 'TransfertController::transfererApi');
 $routes->get('transfert/calculer-frais', 'TransfertController::calculerFraisApi');
 
+$routes->group('retrait', function ($routes) {
+    $routes->get('/', 'RetraitController::index');
+    $routes->post('/', 'RetraitController::retirer');
+    $routes->get('historique', 'RetraitController::historique');
+});
+$routes->get('retrait/calculer-frais', 'RetraitController::calculerFraisApi');
+
 $routes->group('admin/baremes', function ($routes) {
     $routes->get('/', 'BaremeController::index');
     $routes->get('create', 'BaremeController::create');

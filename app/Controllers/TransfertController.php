@@ -75,7 +75,7 @@ class TransfertController extends BaseController
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        $operations = $this->transfertModel->getHistoriqueTransferts($client['client_id'], 10);
+        $operations = $this->transfertModel->getHistoriqueGlobal($client['client_id'], 10);
         $recentOperations = array_slice($operations, 0, 3);
         $solde = $this->transfertModel->getSolde($client['client_id']);
 
