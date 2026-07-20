@@ -299,10 +299,6 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
             <div class="hero-copy">
                 <p class="eyebrow">Tableau de bord client</p>
                 <h1 id="dashboard-title">Bonjour <?= esc($client_nom ?: 'Client') ?>.</h1>
-                <p>
-                    Votre espace centralise les transferts, l'historique et vos actions rapides.
-                    Vous pouvez lancer un transfert, consulter vos opérations récentes ou vous déconnecter en un clic.
-                </p>
 
                 <div class="quick-metadata">
                     <span class="meta-pill">Numéro : <?= esc($numero_client) ?></span>
@@ -346,10 +342,15 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
                 <div class="operations-list">
                     <?php foreach ($dashboard['recent_operations'] as $operation): ?>
                         <?php
+                            $isDepot = isset($operation['type_operation_code']) && $operation['type_operation_code'] === 'DEPOT';
                             $isRetrait = isset($operation['type_operation_code']) && $operation['type_operation_code'] === 'RETRAIT';
-                            $estEnvoye = !$isRetrait && !empty($operation['source_client']) && (int) $operation['source_client'] === (int) $client_id;
-                            
-                            if ($isRetrait) {
+                            $estEnvoye = !$isRetrait && !$isDepot && !empty($operation['source_client']) && (int) $operation['source_client'] === (int) $client_id;
+
+                            if ($isDepot) {
+                                $libelle = 'Dépôt sur votre compte';
+                                $montant = (float) $operation['montant'];
+                                $signe = '+';
+                            } elseif ($isRetrait) {
                                 $libelle = "Retrait d'espèces";
                                 $montant = (float) $operation['montant_total'];
                                 $signe = '-';

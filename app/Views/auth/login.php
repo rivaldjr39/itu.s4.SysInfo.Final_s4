@@ -283,6 +283,7 @@
                             autocomplete="tel"
                             required
                         >
+                         <div class="hint">Numero client 0331111111 ou 0332222222</div>
                         <div class="hint">Format attendu: 10 à 15 chiffres, sans espace ni séparateur.</div>
                     </div>
                     <div class="actions">

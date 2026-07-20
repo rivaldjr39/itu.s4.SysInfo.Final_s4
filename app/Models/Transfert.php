@@ -218,9 +218,7 @@ class Transfert extends Model
             ->getResultArray();
     }
 
-    // ------------------------------------------------------------
-    // 8. Historique global d'un client (transferts + retraits + depots)
-    // ------------------------------------------------------------
+    // Historique global du client : transferts, retraits et dépôts
     public function getHistoriqueGlobal(int $clientId, int $limite = 20): array
     {
         return $this->db->table('operations o')
@@ -233,8 +231,8 @@ class Transfert extends Model
             ->join('client cld', 'COALESCE(cld.id, cld.rowid) = cd.client_id', 'left')
             ->join('types_operations top', 'COALESCE(top.id, top.rowid) = o.type_operation_id', 'left')
             ->groupStart()
-                ->where('cs.client_id', $clientId)
-                ->orWhere('cd.client_id', $clientId)
+                ->where("o.compte_source_id IN (SELECT id FROM comptes WHERE client_id = {$clientId})", null, false)
+                ->orWhere("o.compte_destination_id IN (SELECT id FROM comptes WHERE client_id = {$clientId})", null, false)
             ->groupEnd()
             ->orderBy('o.date_operation', 'DESC')
             ->limit($limite)
