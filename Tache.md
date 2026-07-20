@@ -58,3 +58,18 @@
   - fonction authentification par numero de telephone :Rivaldo
   - fonction prendre le session de l'utilisateur connecter :Rivaldo(ok)
   - Fonction pour la deconnexion :Rivaldo(ok)
+
+## Depot
+- vue depot/depot.php
+  - Affichage du solde actuel :Rivaldo(ok)
+  - Input du montant a deposer : Rivaldo(ok)
+  - fonction js pour calculer et afficher le frais du depot dynamique :Rivaldo(ok)
+- Controller DepotController.php
+  - fonction pour prendre l'info du client connecter resolveCurrentClient():Rivaldo(ok)
+  - redirection vers le vue et la session index() :Rivaldo(ok)
+  - Comparaison et calcul de frais par rapport au montant deposer pour le js dans le vue calculerFraisApi() : Rivaldo(ok)
+
+- Model Depot.php
+  - function pour prendre les baremes de depot getBaremeFrais(float $montant):Rivaldo(ok)
+  - function pour prendre le compte et solde du client  getCompteParClientId() et vgetSolde(int $clientId) :Rivaldo(ok)
+  - fonction pour efectuer le depot  effectuerDepot(int $clientId, float $montant): Rivaldo(ok)

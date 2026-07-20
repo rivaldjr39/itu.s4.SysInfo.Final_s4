@@ -219,7 +219,7 @@ class Transfert extends Model
     }
 
     // ------------------------------------------------------------
-    // 8. Historique global d'un client (transferts + retraits)
+    // 8. Historique global d'un client (transferts + retraits + depots)
     // ------------------------------------------------------------
     public function getHistoriqueGlobal(int $clientId, int $limite = 20): array
     {

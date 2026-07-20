@@ -120,7 +120,7 @@ class Depot extends Model
         }
 
         $frais = $this->calculerFrais($bareme, $montant);
-        $montantTotal = $montant + $frais;
+        $montantTotal = $montant - $frais;
         $reference = $this->genererReference();
 
         $this->db->transStart();

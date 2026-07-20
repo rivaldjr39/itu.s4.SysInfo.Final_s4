@@ -309,15 +309,6 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
                     <span class="meta-pill">ID client : #<?= esc((string) $client_id) ?></span>
                 </div>
             </div>
-
-            <aside class="hero-panel">
-                <h2>Accès rapide</h2>
-                <p>Commencez par un transfert ou ouvrez l'historique pour vérifier vos dernières opérations.</p>
-                <div class="hero-actions">
-                    <a class="primary" href="<?= site_url('transfert') ?>">Faire un transfert</a>
-                    <a class="secondary" href="<?= site_url('transfert/historique') ?>">Voir l'historique</a>
-                </div>
-            </aside>
         </section>
 
         <section class="stats-grid" aria-label="Résumé du compte">
@@ -343,12 +334,9 @@ $dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
         <section class="panel-card" aria-labelledby="recent-title">
             <div class="panel-head">
                 <div>
-                    <h3 id="recent-title">Opérations récentes</h3>
-                    <p>Les trois dernières transactions de votre compte.</p>
+                    <h3 id="recent-title">Historique Global de votre operations</h3>
                 </div>
-                <a href="<?= site_url('transfert/historique') ?>" class="hero-actions secondary" style="border-color: var(--line); color: var(--teal-950);">Historique complet</a>
             </div>
-
             <?php if (empty($dashboard['recent_operations'])): ?>
                 <div class="empty-state">
                     <strong>Aucune opération</strong>
