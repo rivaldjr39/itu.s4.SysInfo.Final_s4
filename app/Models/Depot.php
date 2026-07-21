@@ -72,6 +72,7 @@ class Depot extends Model
     public function getCompteParClientId(int $clientId): ?array
     {
         $compte = $this->db->table('comptes')
+            ->select('COALESCE(id, rowid) AS id, client_id, solde, date_creation')
             ->where('client_id', $clientId)
             ->limit(1)
             ->get()

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\Retrait;
+use App\Models\Transfert;
 
 class RetraitController extends BaseController
 {
@@ -79,9 +80,15 @@ class RetraitController extends BaseController
 
         $montant = (float) $this->request->getPost('montant');
 
+        // Récupérer l'opérateur du client pour les frais spécifiques
+        $transfertModel = new \App\Models\Transfert();
+        $compte = $transfertModel->getCompteParNumero($client['numero_client']);
+        $operateurId = $compte ? (int) ($compte['operateur_id'] ?? 0) : null;
+
         $resultat = $this->retraitModel->effectuerRetrait(
             $client['numero_client'],
-            $montant
+            $montant,
+            $operateurId
         );
 
         if (!$resultat['success']) {
@@ -125,12 +132,20 @@ class RetraitController extends BaseController
             ])->setStatusCode(422);
         }
 
-        $bareme = $this->retraitModel->getBaremeFrais($montant);
+        // Récupérer l'opérateur du client connecté
+        $numeroClient = session()->get('numero_telephone');
+        $operateurId = null;
+        if ($numeroClient) {
+            $compte = $this->retraitModel->getCompteParNumero($numeroClient);
+            $operateurId = $compte ? (int) ($compte['operateur_id'] ?? 0) : null;
+        }
+
+        $bareme = $this->retraitModel->getBaremeFrais($montant, $operateurId);
 
         if (!$bareme) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Aucun barème de frais de retrait pour ce montant.',
+                'message' => 'Aucun barème de frais de retrait pour ce montant et cet opérateur.',
             ])->setStatusCode(404);
         }
 

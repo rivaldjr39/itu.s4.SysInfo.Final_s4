@@ -276,14 +276,14 @@
                             type="tel"
                             id="numero_telephone"
                             name="numero_telephone"
-                            placeholder="0331234567"
-                            value="0331234567"
+                            placeholder="numero de telephone"
+                            value="0380000001"
                             value="<?= esc(old('numero_telephone') ?? '') ?>"
                             inputmode="numeric"
                             autocomplete="tel"
                             required
                         >
-                         <div class="hint">Numero client 0331111111 ou 0332222222</div>
+                         <div class="hint">Numero client 0381234567 ou 0332222222</div>
                         <div class="hint">Format attendu: 10 à 15 chiffres, sans espace ni séparateur.</div>
                     </div>
                     <div class="actions">

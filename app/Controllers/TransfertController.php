@@ -47,6 +47,16 @@ class TransfertController extends BaseController
         ];
     }
 
+    private function normaliserNumeroTelephone(?string $numero): string
+    {
+        return preg_replace('/\D+/', '', (string) $numero) ?? '';
+    }
+
+    private function numeroTelephoneValide(string $numero): bool
+    {
+        return strlen($numero) >= 10 && strlen($numero) <= 15;
+    }
+
     // ------------------------------------------------------------
     // Affiche le formulaire de transfert
     // ------------------------------------------------------------
@@ -96,30 +106,36 @@ class TransfertController extends BaseController
     // ------------------------------------------------------------
     public function transferer()
     {
-        $numeroSource = session()->get('numero_telephone');
+        $numeroSource = $this->normaliserNumeroTelephone((string) session()->get('numero_telephone'));
 
         if (!$numeroSource) {
             return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        $rules = [
-            'numero_destination' => 'required|min_length[10]|max_length[15]',
-            'montant'            => 'required|numeric|greater_than[0]',
-        ];
-
-        if (!$this->validate($rules)) {
+        if (!$this->validate([
+            'montant' => 'required|numeric|greater_than[0]',
+        ])) {
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
         }
 
-        $numeroDestination = $this->request->getPost('numero_destination');
+        $numeroDestination = $this->normaliserNumeroTelephone($this->request->getPost('numero_destination'));
+
+        if (!$this->numeroTelephoneValide($numeroDestination)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Veuillez saisir un numéro destinataire valide.');
+        }
+
         $montant            = (float) $this->request->getPost('montant');
+        $inclureFraisRetrait = $this->request->getPost('inclure_frais_retrait') === '1';
 
         $resultat = $this->transfertModel->effectuerTransfert(
             $numeroSource,
             $numeroDestination,
-            $montant
+            $montant,
+            $inclureFraisRetrait
         );
 
         if (!$resultat['success']) {
@@ -128,8 +144,19 @@ class TransfertController extends BaseController
                 ->with('error', $resultat['message']);
         }
 
+        $message = $resultat['message'] . ' Référence : ' . $resultat['reference'];
+        $message .= ' — Frais : ' . $resultat['frais'] . ' Ar';
+
+        if (isset($resultat['commission_supplementaire']) && (float) $resultat['commission_supplementaire'] > 0) {
+            $message .= ' dont commission opérateur destinataire : ' . $resultat['commission_supplementaire'] . ' Ar';
+        }
+
+        if (isset($resultat['frais_retrait']) && (float) $resultat['frais_retrait'] > 0) {
+            $message .= ' — Frais de retrait : ' . $resultat['frais_retrait'] . ' Ar';
+        }
+
         return redirect()->to('/transfert')
-            ->with('success', $resultat['message'] . ' Référence : ' . $resultat['reference'] . ' — Frais : ' . $resultat['frais'] . ' Ar');
+            ->with('success', $message);
     }
 
     // ------------------------------------------------------------
@@ -160,6 +187,9 @@ class TransfertController extends BaseController
     public function calculerFraisApi()
     {
         $montant = (float) $this->request->getGet('montant');
+        $numeroDestination = $this->normaliserNumeroTelephone((string) $this->request->getGet('numero_destination'));
+        $numeroSource = $this->normaliserNumeroTelephone((string) session()->get('numero_telephone'));
+        $inclureFraisRetrait = $this->request->getGet('inclure_frais_retrait') === '1';
 
         if ($montant <= 0) {
             return $this->response->setJSON([
@@ -168,21 +198,213 @@ class TransfertController extends BaseController
             ])->setStatusCode(422);
         }
 
-        $bareme = $this->transfertModel->getBaremeFrais($montant);
-
-        if (!$bareme) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Aucun barème de frais pour ce montant.',
-            ])->setStatusCode(404);
+        // Récupérer l'opérateur source pour vérifier si c'est notre opérateur
+        $compteSource = null;
+        $operateurSourceId = null;
+        
+        if ($numeroSource) {
+            $compteSource = $this->transfertModel->getCompteParNumero($numeroSource);
+            if ($compteSource) {
+                $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
+            }
         }
 
-        $frais = $this->transfertModel->calculerFrais($bareme, $montant);
+        // Si pas de compte source connecté, retourner une erreur
+        if (!$compteSource) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Veuillez vous connecter pour calculer les frais.',
+            ])->setStatusCode(401);
+        }
+
+        // Récupérer le barème de frais (seulement pour notre opérateur)
+        $bareme = $this->transfertModel->getBaremeFrais($montant, $operateurSourceId);
+
+        // Initialiser les frais par défaut
+        $fraisDetails = [
+            'inter_operateur' => false,
+            'frais_base' => 0.0,
+            'commission_supplementaire' => 0.0,
+            'frais_total' => 0.0,
+            'frais_retrait' => 0.0,
+        ];
+
+        if ($numeroDestination !== '') {
+            if (!$this->numeroTelephoneValide($numeroDestination)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Numéro destinataire invalide.',
+                ])->setStatusCode(422);
+            }
+
+            $compteDestination = $this->transfertModel->getCompteParNumero($numeroDestination);
+
+            if (!$compteSource || !$compteDestination) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Numéro source ou destinataire introuvable.',
+                ])->setStatusCode(404);
+            }
+
+            $operateurDestinationId = (int) ($compteDestination['operateur_id'] ?? 0);
+            $estInterOperateur = $operateurSourceId !== $operateurDestinationId;
+
+            // Si c'est notre opérateur, calculer les frais normaux
+            if ($bareme) {
+                $fraisDetails = $this->transfertModel->calculerFraisTransfert(
+                    $bareme,
+                    $montant,
+                    $operateurSourceId,
+                    $operateurDestinationId
+                );
+            } else {
+                // Si ce n'est pas notre opérateur, seulement la commission inter-opérateur
+                $fraisDetails['inter_operateur'] = $estInterOperateur;
+                if ($estInterOperateur) {
+                    $commission = round(
+                        $montant * $this->transfertModel->getCommissionInterOperateur($operateurDestinationId) / 100,
+                        2
+                    );
+                    $fraisDetails['commission_supplementaire'] = $commission;
+                    $fraisDetails['frais_total'] = $commission;
+                }
+            }
+
+            // Calculer les frais de retrait si l'option est activée et si c'est notre opérateur
+            if ($inclureFraisRetrait && $bareme) {
+                $fraisRetrait = $this->transfertModel->calculerFraisRetrait($montant, $operateurSourceId);
+                $fraisDetails['frais_retrait'] = $fraisRetrait;
+                $fraisDetails['frais_total'] += $fraisRetrait;
+            }
+        } elseif ($bareme) {
+            // Pas de destination, juste calculer les frais de base
+            $fraisDetails['frais_base'] = $this->transfertModel->calculerFrais($bareme, $montant);
+            $fraisDetails['frais_total'] = $fraisDetails['frais_base'];
+        } else {
+            // Pas de barème (autre opérateur) et pas de destination
+            // Retourner les frais à 0 mais avec succès
+            $fraisDetails = [
+                'inter_operateur' => false,
+                'frais_base' => 0.0,
+                'commission_supplementaire' => 0.0,
+                'frais_total' => 0.0,
+                'frais_retrait' => 0.0,
+            ];
+        }
+
+        $promotionReduction = $fraisDetails['promotion_reduction'] ?? 0;
+        $promotionMessage = $fraisDetails['promotion_message'] ?? null;
 
         return $this->response->setJSON([
-            'success'       => true,
-            'frais'         => $frais,
-            'montant_total' => $montant + $frais,
+            'success'                   => true,
+            'inter_operateur'           => (bool) $fraisDetails['inter_operateur'],
+            'frais_base'                => $fraisDetails['frais_base'],
+            'commission_supplementaire' => $fraisDetails['commission_supplementaire'],
+            'frais_retrait'             => $fraisDetails['frais_retrait'],
+            'frais'                     => $fraisDetails['frais_total'],
+            'montant_total'             => $montant + $fraisDetails['frais_total'],
+            'inclure_frais_retrait'     => $inclureFraisRetrait,
+            'promotion_reduction'       => $promotionReduction,
+            'promotion_message'         => $promotionMessage,
+        ]);
+    }
+
+    // ------------------------------------------------------------
+    // Affiche le formulaire d'envoi multiple
+    // ------------------------------------------------------------
+    public function multiple()
+    {
+        $client = $this->resolveCurrentClient();
+
+        if (!$client) {
+            return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
+        }
+
+        return view('Transferts/multiple', [
+            'numero_client' => $client['numero_client'],
+            'client_nom'    => $client['client_nom'],
+        ]);
+    }
+
+    // ------------------------------------------------------------
+    // Traite l'envoi multiple vers plusieurs numéros
+    // ------------------------------------------------------------
+    public function transfererMultiple()
+    {
+        $numeroSource = session()->get('numero_telephone');
+
+        if (!$numeroSource) {
+            return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
+        }
+
+        $numeros = $this->request->getPost('numeros');
+        $montantTotal = (float) $this->request->getPost('montant_total');
+
+        if (!$numeros || !is_array($numeros) || count($numeros) < 2) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Veuillez spécifier au moins deux destinataires.');
+        }
+
+        // Nettoyer les numéros vides
+        $numeros = array_values(array_filter(array_map('trim', $numeros)));
+
+        if (count($numeros) < 2) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Veuillez spécifier au moins deux destinataires.');
+        }
+
+        if ($montantTotal <= 0) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Montant total invalide.');
+        }
+
+        $resultat = $this->transfertModel->effectuerTransfertsMultiple(
+            $numeroSource,
+            $numeros,
+            $montantTotal
+        );
+
+        if (!$resultat['success']) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $resultat['message']);
+        }
+
+        // Construire le message détaillé
+        $message = $resultat['message'] . ' — ' . number_format($resultat['montant_par_personne'], 0, ',', ' ') . ' Ar chacun.';
+        $message .= ' Frais total : ' . number_format($resultat['frais_total'], 0, ',', ' ') . ' Ar.';
+
+        return redirect()->to('/transfert/multiple')
+            ->with('success', $message);
+    }
+
+    // ------------------------------------------------------------
+    // Situation des gains via les frais (retrait + transfert)
+    // Accessible uniquement aux administrateurs
+    // ------------------------------------------------------------
+    public function gainsFrais()
+    {
+        $role = session()->get('client_role');
+        if (!$role || $role !== 'ADMIN') {
+            return redirect()->to('/dashboard')->with('error', 'Accès réservé aux administrateurs.');
+        }
+
+        $dateDebut = $this->request->getGet('date_debut');
+        $dateFin   = $this->request->getGet('date_fin');
+
+        $stats = $this->transfertModel->getStatsFrais(
+            !empty($dateDebut) ? $dateDebut : null,
+            !empty($dateFin)   ? $dateFin   : null
+        );
+
+        return view('admin/gains_frais', [
+            'stats'          => $stats,
+            'title'          => 'Situation des gains — Frais perçus',
+            'date_debut'     => $dateDebut,
+            'date_fin'       => $dateFin,
         ]);
     }
 
@@ -191,27 +413,32 @@ class TransfertController extends BaseController
     // ------------------------------------------------------------
     public function transfererApi()
     {
-        $numeroSource = $this->request->getPost('numero_source');
-        $numeroDestination = $this->request->getPost('numero_destination');
+        $numeroSource = $this->normaliserNumeroTelephone($this->request->getPost('numero_source'));
+        $numeroDestination = $this->normaliserNumeroTelephone($this->request->getPost('numero_destination'));
         $montant = (float) $this->request->getPost('montant');
+        $inclureFraisRetrait = $this->request->getPost('inclure_frais_retrait') === '1';
 
-        $rules = [
-            'numero_source'      => 'required|min_length[10]|max_length[15]',
-            'numero_destination' => 'required|min_length[10]|max_length[15]',
-            'montant'            => 'required|numeric|greater_than[0]',
-        ];
-
-        if (!$this->validate($rules)) {
+        if (!$this->validate([
+            'montant' => 'required|numeric|greater_than[0]',
+        ])) {
             return $this->response->setJSON([
                 'success' => false,
                 'errors'  => $this->validator->getErrors(),
             ])->setStatusCode(422);
         }
 
+        if (!$this->numeroTelephoneValide($numeroSource) || !$this->numeroTelephoneValide($numeroDestination)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Numéro source ou destinataire invalide.',
+            ])->setStatusCode(422);
+        }
+
         $resultat = $this->transfertModel->effectuerTransfert(
             $numeroSource,
             $numeroDestination,
-            $montant
+            $montant,
+            $inclureFraisRetrait
         );
 
         $statusCode = $resultat['success'] ? 200 : 400;
