@@ -59,6 +59,7 @@ $routes->group('admin/baremes', function ($routes) {
 
 $routes->group('admin/promotions', function ($routes) {
     $routes->get('/', 'PromotionController::index');
+    $routes->get('edit/(:num)', 'PromotionController::edit/$1');
     $routes->post('store', 'PromotionController::store');
     $routes->post('update/(:num)', 'PromotionController::update/$1');
     $routes->get('delete/(:num)', 'PromotionController::delete/$1');
