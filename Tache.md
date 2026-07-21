@@ -120,3 +120,16 @@
     - [ok] Model : effectuerTransfertsMultiple()
     - [ok] Routes : GET/POST /transfert/multiple
     - [ok] Lien navigation depuis formulaire simple
+
+## Alea 2 : Tommy
+- Epargne
+  - Base de donnee
+    - [ok] Creation d'un nouveau table
+    - [ok] Donnee de test
+  - Fonction concerner : 
+      - [ok] effectuerTransfert
+        - [ok] Modificaton : ajouter une requete qui transfere l'argent vers le table epargen qui contient l'epargne du client en fonction du pourcentage d'epargne
+  - Fonction a cree :
+      - [Pas fini] getepargneclient(id_client)
+  - Erreur :
+      - Table 'promotion_transfert non trouver'

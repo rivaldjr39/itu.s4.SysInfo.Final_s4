@@ -67,6 +67,10 @@ INSERT INTO comptes (id, client_id, solde) VALUES (3, 3, 100000);
 INSERT INTO comptes (id, client_id, solde) VALUES (4, 4, 75000);
 INSERT INTO comptes (id, client_id, solde) VALUES (5, 5, 500000);
 
+-- Epargne
+INSERT INTO epargne (id,pourcentage_epargne,solde_epargne,id_compte) VALUES 
+(1,5,0,1);
+
 
 INSERT INTO baremes_frais (id, type_operation_id, operateur_id, montant_min, montant_max, frais_fixe, frais_pourcentage) 
 VALUES (1, 3, 1, 1000, 10000, 500, 1.5);

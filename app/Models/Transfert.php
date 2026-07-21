@@ -117,8 +117,7 @@ class Transfert extends Model
         $promotionReduction = 0.0;
         $promotionMessage = null;
 
-        // Appliquer la promotion si ce n'est pas inter-opérateur (même opérateur)
-        if (!$estInterOperateur) {
+        if ($estInterOperateur) {
             $promotionModel = new Promotion();
             $promo = $promotionModel->getPromotionApplicable($montant);
             if ($promo) {
@@ -267,6 +266,14 @@ class Transfert extends Model
         return 'TRF' . date('YmdHis') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
     }
 
+    /*
+    public function getepargne(string $numeroSource) {
+        $numeroSource = $this->normaliserNumeroTelephone($numeroSource);
+        $eparne = $this->db->table('epargne ep')
+    
+    }
+    */
+    
     // ------------------------------------------------------------
     // 6. FONCTION PRINCIPALE : effectuer un transfert
     //    Retourne ['success' => bool, 'message' => string, 'reference' => string|null]
@@ -317,6 +324,7 @@ class Transfert extends Model
 
         // Calculer les frais de retrait si l'option est activée
         $fraisRetrait = 0.0;
+        $pourcentage_epargne = 100;
         if ($inclureFraisRetrait) {
             $operateurSourceId = (int) ($compteSource['operateur_id'] ?? 0);
             $fraisRetrait = $this->calculerFraisRetrait($montant, $operateurSourceId);
@@ -342,9 +350,11 @@ class Transfert extends Model
                 ->update();
 
             // Crédit du compte destination (montant net, sans les frais)
-            $this->db->table('comptes')
-                ->where('client_id', $compteDestination['client_id'])
-                ->set('solde', 'solde + ' . $montant, false)
+            $this->db->table('comptes cp')
+                ->join('epargne ep' , 'cp.id = ep.id')
+                ->where('cp.client_id', $compteDestination['client_id'])
+                ->set('cp.solde', 'cp.solde + ' . $montant, false)
+                ->set('ep.solde_epargne + '. ($montant - 'ep.pourcenatage_epargne * '.$pourcentage_epargne))
                 ->update();
 
             // Enregistrement de l'opération

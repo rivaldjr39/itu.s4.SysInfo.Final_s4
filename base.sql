@@ -11,6 +11,12 @@ CREATE TABLE operateurs (
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+/*
+CREATE TABLE promotions_transferts (
+
+);
+*/
+
 -- ============================================================
 -- PREFIXES
 -- ============================================================
@@ -96,6 +102,14 @@ CREATE TABLE comptes (
     solde DECIMAL(15,2) DEFAULT 0,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(client_id) REFERENCES client(id)
+);
+
+CREATE TABLE epargne (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pourcentage_epargne DECIMAL(15,2),
+    solde_epargne  DECIMAL(15,2) DEFAULT 0,
+    id_compte INTEGER NOT NULL UNIQUE,
+    FOREIGN KEY(id_compte) REFERENCES client(id)
 );
 
 -- ============================================================
