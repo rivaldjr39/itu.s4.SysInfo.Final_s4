@@ -7,60 +7,39 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
 <?= $this->section('content') ?>
 
 <style>
-    :root {
-        --teal-950: #0b2e2b;
-        --teal-800: #12433f;
-        --paper: #f6f3ec;
-        --ink: #1f2421;
-        --ink-soft: #5c655f;
-        --gold: #d9a441;
-        --gold-dark: #b5842e;
-        --error: #c1452b;
-        --success: #4f7a5c;
-        --line: #dcd6c7;
-    }
-
     .transfert-page {
-        min-height: calc(100vh - 72px);
-        background:
-            radial-gradient(circle at 15% 0%, rgba(217, 164, 65, 0.10), transparent 45%),
-            radial-gradient(circle at 85% 100%, rgba(217, 164, 65, 0.08), transparent 50%),
-            var(--teal-950);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 32px 16px 48px;
+        padding: 32px 32px 48px;
+        max-width: 600px;
+        margin: 0 auto;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: var(--ink);
+        color: var(--text);
     }
 
     .transfert-card {
-        width: 100%;
-        max-width: 520px;
-        background: var(--paper);
-        border-radius: 24px;
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
         overflow: hidden;
-        box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border);
     }
 
     .transfert-header {
-        background: linear-gradient(160deg, var(--teal-800), #0c3835);
-        color: var(--paper);
-        padding: 28px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 28px 32px;
     }
 
     .transfert-header .eyebrow {
         font-size: 12px;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: rgba(246, 243, 236, 0.6);
+        color: rgba(255, 255, 255, 0.7);
         margin: 0 0 6px;
-        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 600;
     }
 
     .transfert-header h1 {
-        font-family: 'Fraunces', Georgia, serif;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 26px;
         margin: 0 0 4px;
         letter-spacing: -0.01em;
@@ -69,16 +48,16 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
     .transfert-header .from-number {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 13px;
-        color: rgba(246, 243, 236, 0.75);
+        color: rgba(255, 255, 255, 0.75);
     }
 
     .transfert-body {
-        padding: 24px 28px 28px;
+        padding: 28px 32px 32px;
     }
 
     .info-banner,
     .flash {
-        border-radius: 12px;
+        border-radius: var(--radius);
         padding: 12px 14px;
         font-size: 13.5px;
         margin-bottom: 18px;
@@ -86,21 +65,21 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
     }
 
     .info-banner {
-        background: rgba(79, 122, 92, 0.12);
-        color: var(--success);
-        border: 1px solid rgba(79, 122, 92, 0.3);
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
     }
 
     .flash.success {
-        background: rgba(79, 122, 92, 0.12);
-        color: var(--success);
-        border: 1px solid rgba(79, 122, 92, 0.3);
+        background: #dcfce7;
+        color: #16a34a;
+        border: 1px solid #bbf7d0;
     }
 
     .flash.error {
-        background: rgba(193, 69, 43, 0.1);
-        color: var(--error);
-        border: 1px solid rgba(193, 69, 43, 0.3);
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
     }
 
     .field {
@@ -114,34 +93,34 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
         font-weight: 600;
         letter-spacing: 0.03em;
         text-transform: uppercase;
-        color: var(--ink-soft);
+        color: var(--text-secondary);
         margin-bottom: 8px;
     }
 
     .field input[type="tel"] {
         width: 100%;
         box-sizing: border-box;
-        border: 1.5px solid var(--line);
-        background: #fff;
-        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        background: var(--bg);
+        border-radius: var(--radius);
         padding: 13px 14px;
         font-size: 15px;
         font-family: 'IBM Plex Mono', monospace;
-        color: var(--ink);
-        transition: border-color 0.15s ease;
+        color: var(--text);
+        transition: var(--transition);
     }
 
     .field input[type="tel"]:focus,
     .amount-input-row input[type="number"]:focus {
         outline: none;
-        border-color: var(--gold-dark);
-        box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.2);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
     }
 
     .amount-field {
-        border: 1.5px solid var(--line);
-        border-radius: 14px;
-        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
         padding: 16px 16px 12px;
         margin-bottom: 22px;
     }
@@ -155,7 +134,7 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
     .amount-input-row .currency {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 20px;
-        color: var(--ink-soft);
+        color: var(--text-muted);
     }
 
     .amount-input-row input[type="number"] {
@@ -163,12 +142,12 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
         border: none;
         appearance: textfield;
         -moz-appearance: textfield;
-        font-family: 'Fraunces', Georgia, serif;
         font-size: 34px;
-        font-weight: 600;
-        color: var(--ink);
+        font-weight: 700;
+        color: var(--text);
         width: 100%;
         background: transparent;
+        outline: none;
     }
 
     .amount-input-row input[type="number"]::-webkit-outer-spin-button,
@@ -178,7 +157,7 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
     }
 
     .field-error {
-        color: var(--error);
+        color: #dc2626;
         font-size: 12.5px;
         margin-top: 6px;
         font-family: 'IBM Plex Mono', monospace;
@@ -188,32 +167,32 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
         margin-top: 10px;
         font-size: 13px;
         font-family: 'IBM Plex Mono', monospace;
-        color: var(--ink-soft);
+        color: var(--text-secondary);
         min-height: 18px;
     }
 
     .frais-info .frais-total {
-        color: var(--gold-dark);
-        font-weight: 600;
+        color: var(--accent);
+        font-weight: 700;
     }
 
     .btn-transferer {
         width: 100%;
         border: none;
-        border-radius: 12px;
-        background: var(--gold);
-        color: var(--teal-950);
+        border-radius: var(--radius);
+        background: var(--primary);
+        color: white;
         font-family: 'Inter', sans-serif;
         font-weight: 700;
         font-size: 15px;
         letter-spacing: 0.01em;
         padding: 15px;
         cursor: pointer;
-        transition: background 0.15s ease, transform 0.1s ease;
+        transition: var(--transition);
     }
 
     .btn-transferer:hover {
-        background: var(--gold-dark);
+        background: var(--primary-dark);
     }
 
     .btn-transferer:active {
@@ -225,58 +204,63 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
         text-align: center;
         margin-top: 18px;
         font-size: 13px;
-        color: var(--ink-soft);
+        color: var(--text-secondary);
         text-decoration: none;
     }
 
     .lien-historique:hover {
-        color: var(--gold-dark);
-        text-decoration: underline;
+        color: var(--primary);
     }
 
     .dashboard-link {
-        color: inherit;
+        color: #2563eb;
         font-weight: 700;
     }
 
-    @media (max-width: 640px) {
-        .transfert-page {
-            padding: 16px;
-        }
+    .promotion-badge {
+        display: inline-block;
+        background: #dcfce7;
+        color: #16a34a;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
 
-        .transfert-header h1 {
-            font-size: 24px;
-        }
+    @media (max-width: 640px) {
+        .transfert-page { padding: 16px; }
+        .transfert-header h1 { font-size: 24px; }
     }
 </style>
 
 <div class="transfert-page">
     <div class="transfert-card">
         <div class="transfert-header">
-            <p class="eyebrow">Nouvelle opération</p>
+            <p class="eyebrow"><i class="fas fa-paper-plane" style="margin-right: 6px;"></i>Nouvelle opération</p>
             <h1>Transférer de l'argent</h1>
-            <div class="from-number">Depuis le <?= esc($numero_client) ?></div>
+            <div class="from-number"><i class="fas fa-phone" style="margin-right: 4px;"></i>Depuis le <?= esc($numero_client) ?></div>
         </div>
 
         <div class="transfert-body">
             <div class="info-banner">
-                Accédez au <a class="dashboard-link" href="<?= site_url('dashboard') ?>">dashboard</a> pour voir vos chiffres clés avant d'effectuer un transfert.
+                <i class="fas fa-info-circle" style="margin-right: 6px;"></i>Accédez au <a class="dashboard-link" href="<?= site_url('dashboard') ?>">dashboard</a> pour voir vos chiffres clés.
             </div>
-            <div class="info-banner" style="background: rgba(217, 164, 65, 0.12); color: var(--teal-800); border-color: rgba(217, 164, 65, 0.28);">
-                Si le destinataire appartient à un autre opérateur, une commission additionnelle s'ajoute en plus du frais de transfert.
+            <div class="info-banner" style="background: #fef3c7; color: #b45309; border-color: #fde68a;">
+                <i class="fas fa-exchange-alt" style="margin-right: 6px;"></i>Si le destinataire appartient à un autre opérateur, une commission additionnelle s'ajoute.
             </div>
 
             <?php if (session()->getFlashdata('success')): ?>
-                <div class="flash success"><?= esc(session()->getFlashdata('success')) ?></div>
+                <div class="flash success"><i class="fas fa-check-circle" style="margin-right: 6px;"></i><?= esc(session()->getFlashdata('success')) ?></div>
             <?php endif; ?>
 
             <?php if (session()->getFlashdata('error')): ?>
-                <div class="flash error"><?= esc(session()->getFlashdata('error')) ?></div>
+                <div class="flash error"><i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i><?= esc(session()->getFlashdata('error')) ?></div>
             <?php endif; ?>
 
             <div style="text-align: right; margin-bottom: 14px;">
-                <a href="<?= site_url('transfert/multiple') ?>" style="font-size: 13px; color: var(--gold-dark); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-weight: 600;">
-                    Envoi groupé →
+                <a href="<?= site_url('transfert/multiple') ?>" style="font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 600;">
+                    <i class="fas fa-users" style="margin-right: 4px;"></i>Envoi groupé →
                 </a>
             </div>
 
@@ -284,35 +268,18 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                 <?= csrf_field() ?>
 
                 <div class="field">
-                    <label for="numero_destination">Numéro du destinataire</label>
-                    <input
-                        type="tel"
-                        id="numero_destination"
-                        name="numero_destination"
-                        placeholder="034 xx xxx xx"
-                        value="<?= esc(old('numero_destination')) ?>"
-                        inputmode="numeric"
-                        required
-                    >
+                    <label for="numero_destination"><i class="fas fa-phone" style="margin-right: 4px;"></i>Numéro du destinataire</label>
+                    <input type="tel" id="numero_destination" name="numero_destination" placeholder="034 xx xxx xx" value="<?= esc(old('numero_destination')) ?>" inputmode="numeric" required>
                     <?php if (session('errors.numero_destination')): ?>
                         <div class="field-error"><?= esc(session('errors.numero_destination')) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="amount-field">
-                    <label for="montant">Montant à envoyer</label>
+                    <label for="montant"><i class="fas fa-coins" style="margin-right: 4px;"></i>Montant à envoyer</label>
                     <div class="amount-input-row">
                         <span class="currency">Ar</span>
-                        <input
-                            type="number"
-                            id="montant"
-                            name="montant"
-                            placeholder="0"
-                            min="1"
-                            step="1"
-                            value="<?= esc(old('montant')) ?>"
-                            required
-                        >
+                        <input type="number" id="montant" name="montant" placeholder="0" min="1" step="1" value="<?= esc(old('montant')) ?>" required>
                     </div>
                     <?php if (session('errors.montant')): ?>
                         <div class="field-error"><?= esc(session('errors.montant')) ?></div>
@@ -321,25 +288,19 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                 </div>
 
                 <div class="field" style="margin-top: 18px; margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--ink); text-transform: none; letter-spacing: normal;">
-                        <input
-                            type="checkbox"
-                            id="inclure_frais_retrait"
-                            name="inclure_frais_retrait"
-                            value="1"
-                            style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--gold-dark);"
-                        >
-                        <span>Inclure les frais de retrait dans le montant total</span>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text); text-transform: none; letter-spacing: normal;">
+                        <input type="checkbox" id="inclure_frais_retrait" name="inclure_frais_retrait" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                        <span><i class="fas fa-receipt" style="margin-right: 4px;"></i>Inclure les frais de retrait dans le montant total</span>
                     </label>
-                    <div style="font-size: 12px; color: var(--ink-soft); margin-top: 6px; margin-left: 28px;">
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; margin-left: 28px;">
                         Si coché, les frais de retrait seront ajoutés au montant débité de votre compte
                     </div>
                 </div>
 
-                <button type="submit" class="btn-transferer">Confirmer le transfert</button>
+                <button type="submit" class="btn-transferer"><i class="fas fa-paper-plane" style="margin-right: 6px;"></i>Confirmer le transfert</button>
             </form>
 
-            <a href="<?= site_url('transfert/historique') ?>" class="lien-historique">Voir l'historique des transferts →</a>
+            <a href="<?= site_url('transfert/historique') ?>" class="lien-historique"><i class="fas fa-clock-rotate" style="margin-right: 4px;"></i>Voir l'historique des transferts →</a>
         </div>
     </div>
 </div>
@@ -375,7 +336,7 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
             return;
         }
 
-        fraisInfo.textContent = 'Calcul des frais…';
+        fraisInfo.innerHTML = '<span class="frais-info">Calcul des frais…</span>';
 
         timerId = setTimeout(() => {
             const params = new URLSearchParams({
@@ -416,6 +377,11 @@ $numero_client = isset($numero_client) && !is_array($numero_client) ? (string) $
                     }
 
                     message += ' — <span class="frais-total">Total débité : ' + total + ' Ar</span>';
+
+                    // Ajouter le badge promotion si présent
+                    if (data.promotion_message) {
+                        message = '<span class="promotion-badge"><i class="fas fa-tag"></i> ' + data.promotion_message + '</span><br>' + message;
+                    }
 
                     fraisInfo.innerHTML = message;
                 })

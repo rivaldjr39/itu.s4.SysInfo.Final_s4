@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Promotion;
 use CodeIgniter\Model;
 use Exception;
 
@@ -29,6 +30,8 @@ class Transfert extends Model
 
     // ID du type d'opération "TRANSFERT" dans la table types_operations
     protected int $typeOperationTransfert = 3;
+    // ID du type d'opération "RETRAIT"
+    protected int $typeOperationRetrait = 2;
     protected array $statutCache = [];
     protected array $commissionCache = [];
 
@@ -101,19 +104,38 @@ class Transfert extends Model
         // Si ce n'est pas notre opérateur, les frais de base sont nuls
         $fraisBase = $estNotreOperateur ? $this->calculerFrais($bareme, $montant) : 0.0;
         $commissionSupplementaire = 0.0;
+        $estInterOperateur = $operateurSourceId !== $operateurDestinationId;
 
-        if ($operateurSourceId !== $operateurDestinationId) {
+        if ($estInterOperateur) {
             $commissionSupplementaire = round(
                 $montant * $this->getCommissionInterOperateur($operateurDestinationId) / 100,
                 2
             );
         }
 
+        $fraisTotal = $fraisBase + $commissionSupplementaire;
+        $promotionReduction = 0.0;
+        $promotionMessage = null;
+
+        // Appliquer la promotion si ce n'est pas inter-opérateur (même opérateur)
+        if (!$estInterOperateur) {
+            $promotionModel = new Promotion();
+            $promo = $promotionModel->getPromotionApplicable($montant);
+            if ($promo) {
+                $promotionReduction = (float) $promo['pourcentage_reduction'];
+                $reductionMontant = round($fraisTotal * $promotionReduction / 100, 2);
+                $fraisTotal = round($fraisTotal - $reductionMontant, 2);
+                $promotionMessage = "Promotion -{$promotionReduction}% appliquée !";
+            }
+        }
+
         return [
             'frais_base' => $fraisBase,
             'commission_supplementaire' => $commissionSupplementaire,
-            'frais_total' => round($fraisBase + $commissionSupplementaire, 2),
-            'inter_operateur' => $operateurSourceId !== $operateurDestinationId,
+            'frais_total' => round($fraisTotal, 2),
+            'inter_operateur' => $estInterOperateur,
+            'promotion_reduction' => $promotionReduction,
+            'promotion_message' => $promotionMessage,
         ];
     }
 

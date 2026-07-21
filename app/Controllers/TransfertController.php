@@ -292,6 +292,9 @@ class TransfertController extends BaseController
             ];
         }
 
+        $promotionReduction = $fraisDetails['promotion_reduction'] ?? 0;
+        $promotionMessage = $fraisDetails['promotion_message'] ?? null;
+
         return $this->response->setJSON([
             'success'                   => true,
             'inter_operateur'           => (bool) $fraisDetails['inter_operateur'],
@@ -301,6 +304,8 @@ class TransfertController extends BaseController
             'frais'                     => $fraisDetails['frais_total'],
             'montant_total'             => $montant + $fraisDetails['frais_total'],
             'inclure_frais_retrait'     => $inclureFraisRetrait,
+            'promotion_reduction'       => $promotionReduction,
+            'promotion_message'         => $promotionMessage,
         ]);
     }
 

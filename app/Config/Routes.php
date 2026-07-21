@@ -57,6 +57,13 @@ $routes->group('admin/baremes', function ($routes) {
 });
 
 
+$routes->group('admin/promotions', function ($routes) {
+    $routes->get('/', 'PromotionController::index');
+    $routes->post('store', 'PromotionController::store');
+    $routes->post('update/(:num)', 'PromotionController::update/$1');
+    $routes->get('delete/(:num)', 'PromotionController::delete/$1');
+});
+
 $routes->group('depot', function ($routes) {
     $routes->get('/', 'DepotController::index');
     $routes->post('/', 'DepotController::deposer');
