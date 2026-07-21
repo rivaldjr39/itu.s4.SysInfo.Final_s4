@@ -1,0 +1,20 @@
+-- ============================================================
+-- PROMOTIONS SUR TRANSFERTS (même opérateur)
+-- ============================================================
+
+CREATE TABLE promotions_transferts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type_operation_id INTEGER NOT NULL DEFAULT 3,
+    pourcentage_reduction DECIMAL(5,2) NOT NULL,
+    date_debut DATETIME NOT NULL,
+    date_fin DATETIME,
+    montant_min DECIMAL(15,2) DEFAULT 0,
+    montant_max DECIMAL(15,2) DEFAULT 999999999.99,
+    actif BOOLEAN DEFAULT 1,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (type_operation_id) REFERENCES types_operations(id)
+);
+
+-- Exemple d'insertion d'une promotion (10% de réduction)
+-- INSERT INTO promotions_transferts (pourcentage_reduction, date_debut)
+-- VALUES (10, datetime('now', '+1 hour'));
